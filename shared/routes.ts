@@ -62,10 +62,10 @@ export const api = {
       },
     },
   },
-  tourInquiries: {
+  tours: {
     create: {
       method: 'POST' as const,
-      path: '/api/tour-inquiries',
+      path: '/api/tours',
       input: insertTourInquirySchema,
       responses: {
         201: z.custom<typeof tourInquiries.$inferSelect>(),
@@ -95,4 +95,4 @@ export function buildUrl(path: string, params?: Record<string, string | number>)
 // ============================================
 export type ProfileInput = z.infer<typeof api.profiles.create.input>;
 export type InquiryInput = z.infer<typeof api.inquiries.create.input>;
-export type TourInquiryInput = z.infer<typeof api.tourInquiries.create.input>;
+export type TourInquiryInput = z.infer<typeof api.tours.create.input>;

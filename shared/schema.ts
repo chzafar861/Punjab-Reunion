@@ -29,9 +29,10 @@ export const tourInquiries = pgTable("tour_inquiries", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull(),
-  phone: text("phone"),
-  interests: text("interests").notNull(), // Places they want to visit
-  travelDate: text("travel_date"),
+  phone: text("phone").notNull(),
+  travelDates: text("travel_dates"),
+  groupSize: integer("group_size"),
+  interestAreas: text("interest_areas").notNull(), // e.g. "Gurdwaras, Historical Places, Villages"
   message: text("message"),
   createdAt: timestamp("created_at").defaultNow(),
 });
