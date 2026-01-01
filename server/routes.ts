@@ -12,7 +12,6 @@ export async function registerRoutes(
   // === PROFILES ===
   app.get(api.profiles.list.path, async (req, res) => {
     const { search, district } = req.query;
-    // Basic validation of query params is good, though strict parsing isn't always needed for optional strings
     const profiles = await storage.getProfiles(
       typeof search === 'string' ? search : undefined,
       typeof district === 'string' ? district : undefined
@@ -49,6 +48,40 @@ export async function registerRoutes(
     try {
       const input = api.inquiries.create.input.parse(req.body);
       const inquiry = await storage.createInquiry(input);
+      res.status(201).json(inquiry);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  // === TOURS ===
+  app.post(api.tours.create.path, async (req, res) => {
+    try {
+      const input = api.tours.create.input.parse(req.body);
+      const inquiry = await storage.createTourInquiry(input);
+      res.status(201).json(inquiry);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  // === TOUR INQUIRIES ===
+  app.post(api.tours.create.path, async (req, res) => {
+    try {
+      const input = api.tours.create.input.parse(req.body);
+      const inquiry = await storage.createTourInquiry(input);
       res.status(201).json(inquiry);
     } catch (err) {
       if (err instanceof z.ZodError) {
