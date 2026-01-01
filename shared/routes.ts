@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertProfileSchema, insertInquirySchema, profiles, inquiries } from './schema';
+import { insertProfileSchema, insertInquirySchema, insertTourInquirySchema, profiles, inquiries, tourInquiries } from './schema';
 
 // ============================================
 // SHARED ERROR SCHEMAS
@@ -62,6 +62,17 @@ export const api = {
       },
     },
   },
+  tourInquiries: {
+    create: {
+      method: 'POST' as const,
+      path: '/api/tour-inquiries',
+      input: insertTourInquirySchema,
+      responses: {
+        201: z.custom<typeof tourInquiries.$inferSelect>(),
+        400: errorSchemas.validation,
+      },
+    },
+  },
 };
 
 // ============================================
@@ -84,3 +95,4 @@ export function buildUrl(path: string, params?: Record<string, string | number>)
 // ============================================
 export type ProfileInput = z.infer<typeof api.profiles.create.input>;
 export type InquiryInput = z.infer<typeof api.inquiries.create.input>;
+export type TourInquiryInput = z.infer<typeof api.tourInquiries.create.input>;

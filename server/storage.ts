@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { profiles, inquiries, type InsertProfile, type InsertInquiry, type Profile, type Inquiry } from "@shared/schema";
+import { profiles, inquiries, tourInquiries, type InsertProfile, type InsertInquiry, type InsertTourInquiry, type Profile, type Inquiry, type TourInquiry } from "@shared/schema";
 import { eq, ilike, or, desc } from "drizzle-orm";
 
 export interface IStorage {
@@ -7,13 +7,13 @@ export interface IStorage {
   getProfile(id: number): Promise<Profile | undefined>;
   createProfile(profile: InsertProfile): Promise<Profile>;
   createInquiry(inquiry: InsertInquiry): Promise<Inquiry>;
+  createTourInquiry(tourInquiry: InsertTourInquiry): Promise<TourInquiry>;
 }
 
 export class DatabaseStorage implements IStorage {
   async getProfiles(search?: string, district?: string): Promise<Profile[]> {
     let query = db.select().from(profiles).orderBy(desc(profiles.createdAt));
     
-    // Add filters dynamically
     const filters = [];
     if (search) {
       filters.push(or(
@@ -27,8 +27,6 @@ export class DatabaseStorage implements IStorage {
       filters.push(ilike(profiles.district, `%${district}%`));
     }
 
-    // Apply where clause if filters exist
-    // Note: Drizzle's where accepts variable arguments for AND, but we need to construct it carefully
     if (filters.length > 0) {
        // @ts-ignore
        return await query.where(...filters);
@@ -50,6 +48,11 @@ export class DatabaseStorage implements IStorage {
   async createInquiry(insertInquiry: InsertInquiry): Promise<Inquiry> {
     const [inquiry] = await db.insert(inquiries).values(insertInquiry).returning();
     return inquiry;
+  }
+
+  async createTourInquiry(insertTourInquiry: InsertTourInquiry): Promise<TourInquiry> {
+    const [tourInquiry] = await db.insert(tourInquiries).values(insertTourInquiry).returning();
+    return tourInquiry;
   }
 }
 
