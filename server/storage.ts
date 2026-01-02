@@ -50,9 +50,9 @@ export class DatabaseStorage implements IStorage {
     return inquiry;
   }
 
-  async createTourInquiry(insertTourInquiry: InsertTourInquiry): Promise<TourInquiry> {
-    const [tourInquiry] = await db.insert(tourInquiries).values(insertTourInquiry).returning();
-    return tourInquiry;
+  async createTourInquiry(tourInquiry: InsertTourInquiry): Promise<TourInquiry> {
+    const [inquiry] = await db.insert(tourInquiries).values(tourInquiry).returning();
+    return inquiry;
   }
 }
 
