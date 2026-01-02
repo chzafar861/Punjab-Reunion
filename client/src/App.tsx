@@ -12,6 +12,7 @@ import Directory from "@/pages/Directory";
 import ProfileDetail from "@/pages/ProfileDetail";
 import SubmitProfile from "@/pages/SubmitProfile";
 import Contact from "@/pages/Contact";
+import HeritageTours from "@/pages/HeritageTours";
 import NotFound from "@/pages/not-found";
 
 // Helper layout
@@ -33,6 +34,7 @@ function Router() {
         <Route path="/directory" component={Directory} />
         <Route path="/profile/:id" component={ProfileDetail} />
         <Route path="/submit" component={SubmitProfile} />
+        <Route path="/tours" component={HeritageTours} />
         <Route path="/contact" component={Contact} />
         <Route component={NotFound} />
       </Switch>
