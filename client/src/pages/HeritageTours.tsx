@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
+import { Link } from "wouter";
 import { api, type TourInquiryInput } from "@shared/routes";
 import { useCreateTourInquiry } from "@/hooks/use-tour-inquiries";
 import { useToast } from "@/hooks/use-toast";
@@ -165,7 +166,7 @@ export default function HeritageTours() {
             <div className="flex flex-wrap justify-center gap-4 mt-8">
               <Button
                 size="lg"
-                className="bg-primary text-white rounded-full px-8 py-6 text-lg shadow-xl"
+                className="bg-primary text-white rounded-full shadow-xl"
                 onClick={() => document.getElementById("services")?.scrollIntoView({ behavior: "smooth" })}
                 data-testid="button-explore-services"
               >
@@ -174,7 +175,7 @@ export default function HeritageTours() {
               <Button
                 size="lg"
                 variant="outline"
-                className="rounded-full px-8 py-6 text-lg bg-white/10 backdrop-blur-md border-white/30 text-white"
+                className="rounded-full bg-white/10 backdrop-blur-md border-white/30 text-white"
                 onClick={() => document.getElementById("gallery")?.scrollIntoView({ behavior: "smooth" })}
                 data-testid="button-view-gallery"
               >
@@ -289,9 +290,16 @@ export default function HeritageTours() {
 
           {/* Villages */}
           <div className="mb-16">
-            <motion.div {...fadeIn} className="flex items-center gap-3 mb-8">
-              <TreeDeciduous className="w-8 h-8 text-primary" />
-              <h3 className="font-serif text-3xl font-bold text-secondary">Punjab Villages</h3>
+            <motion.div {...fadeIn} className="flex items-center justify-between gap-3 mb-8">
+              <div className="flex items-center gap-3">
+                <TreeDeciduous className="w-8 h-8 text-primary" />
+                <h3 className="font-serif text-3xl font-bold text-secondary">Punjab Villages</h3>
+              </div>
+              <Link href="/tours/villages">
+                <Button variant="outline" data-testid="link-explore-villages">
+                  Explore More <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
             </motion.div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {villageImages.map((img, i) => (
@@ -318,9 +326,16 @@ export default function HeritageTours() {
 
           {/* Lahore */}
           <div className="mb-16">
-            <motion.div {...fadeIn} className="flex items-center gap-3 mb-8">
-              <Landmark className="w-8 h-8 text-primary" />
-              <h3 className="font-serif text-3xl font-bold text-secondary">Lahore - Historic & Modern</h3>
+            <motion.div {...fadeIn} className="flex items-center justify-between gap-3 mb-8">
+              <div className="flex items-center gap-3">
+                <Landmark className="w-8 h-8 text-primary" />
+                <h3 className="font-serif text-3xl font-bold text-secondary">Lahore - Historic & Modern</h3>
+              </div>
+              <Link href="/tours/lahore-history">
+                <Button variant="outline" data-testid="link-explore-lahore">
+                  Explore More <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
             </motion.div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {lahoreImages.map((img, i) => (
@@ -420,9 +435,14 @@ export default function HeritageTours() {
                 Modern Pakistan
               </h2>
             </div>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            <p className="text-muted-foreground text-lg max-w-2xl mx-auto mb-6">
               Experience the vibrant, developing cities of today's Pakistan
             </p>
+            <Link href="/tours/modern-cities">
+              <Button variant="outline" data-testid="link-explore-modern">
+                Explore Modern Pakistan <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
+            </Link>
           </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
@@ -512,7 +532,7 @@ export default function HeritageTours() {
                       <Input 
                         id="name" 
                         {...form.register("name")} 
-                        className="border-border"
+                        className="border-border bg-white text-secondary"
                         data-testid="input-tour-name"
                       />
                       {form.formState.errors.name && (
@@ -524,7 +544,7 @@ export default function HeritageTours() {
                       <Input 
                         id="phone" 
                         {...form.register("phone")} 
-                        className="border-border"
+                        className="border-border bg-white text-secondary"
                         data-testid="input-tour-phone"
                       />
                       {form.formState.errors.phone && (
@@ -539,7 +559,7 @@ export default function HeritageTours() {
                       id="email" 
                       type="email" 
                       {...form.register("email")} 
-                      className="border-border"
+                      className="border-border bg-white text-secondary"
                       data-testid="input-tour-email"
                     />
                     {form.formState.errors.email && (
@@ -554,7 +574,7 @@ export default function HeritageTours() {
                         id="travelDates" 
                         placeholder="e.g., March 2026"
                         {...form.register("travelDates")} 
-                        className="border-border"
+                        className="border-border bg-white text-secondary"
                         data-testid="input-tour-dates"
                       />
                     </div>
@@ -565,7 +585,7 @@ export default function HeritageTours() {
                         type="number" 
                         min={1}
                         {...form.register("groupSize", { valueAsNumber: true })} 
-                        className="border-border"
+                        className="border-border bg-white text-secondary"
                         data-testid="input-tour-group-size"
                       />
                     </div>
@@ -579,7 +599,7 @@ export default function HeritageTours() {
                       id="interestAreas" 
                       placeholder="e.g., Village visit, Lahore tour, Import soil from village"
                       {...form.register("interestAreas")} 
-                      className="border-border"
+                      className="border-border bg-white text-secondary"
                       data-testid="input-tour-interests"
                     />
                     {form.formState.errors.interestAreas && (
@@ -596,7 +616,7 @@ export default function HeritageTours() {
                       rows={4}
                       placeholder="Share your village name, district, and what you'd like us to find or show you..."
                       {...form.register("message")} 
-                      className="border-border"
+                      className="border-border bg-white text-secondary"
                       data-testid="input-tour-message"
                     />
                   </div>
