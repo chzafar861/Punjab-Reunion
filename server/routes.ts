@@ -94,8 +94,10 @@ export async function registerRoutes(
     }
   });
 
-  // Seed data if empty
-  await seedDatabase();
+  // Seed data if empty (non-blocking)
+  seedDatabase().catch((err) => {
+    console.warn("Database seeding failed (database may still be initializing):", err.message);
+  });
 
   return httpServer;
 }
