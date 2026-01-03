@@ -11,7 +11,6 @@ export function Navigation() {
   const navLinks = [
     { href: "/", label: "Home" },
     { href: "/directory", label: "Directory" },
-    { href: "/tours", label: "Heritage Tours" },
     { href: "/submit", label: "Submit Profile" },
     { href: "/contact", label: "Contact Us" },
   ];
@@ -40,7 +39,6 @@ export function Navigation() {
                 className={`text-sm font-medium transition-colors hover:text-primary ${
                   location === link.href ? "text-primary font-bold" : "text-secondary"
                 }`}
-                data-testid={`link-nav-${link.href.replace("/", "") || "home"}`}
               >
                 {link.label}
               </Link>
@@ -80,7 +78,6 @@ export function Navigation() {
                     location === link.href ? "text-primary" : "text-secondary"
                   }`}
                   onClick={() => setIsOpen(false)}
-                  data-testid={`link-nav-mobile-${link.href.replace("/", "") || "home"}`}
                 >
                   {link.label}
                 </Link>
