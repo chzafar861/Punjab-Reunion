@@ -156,8 +156,9 @@ export default function Home() {
           </p>
           <Button 
             size="lg" 
-            className="bg-primary hover:bg-primary/90 text-white rounded-full px-10 py-6 text-lg shadow-xl shadow-black/20"
+            className="bg-primary hover:bg-primary/90 text-white rounded-full shadow-xl shadow-black/20"
             onClick={() => setLocation("/submit")}
+            data-testid="button-submit-profile-cta"
           >
             Submit a Profile
           </Button>

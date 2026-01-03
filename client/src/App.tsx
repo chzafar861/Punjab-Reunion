@@ -12,6 +12,10 @@ import Directory from "@/pages/Directory";
 import ProfileDetail from "@/pages/ProfileDetail";
 import SubmitProfile from "@/pages/SubmitProfile";
 import Contact from "@/pages/Contact";
+import HeritageTours from "@/pages/HeritageTours";
+import PunjabVillages from "@/pages/PunjabVillages";
+import LahoreHistory from "@/pages/LahoreHistory";
+import ModernCities from "@/pages/ModernCities";
 import NotFound from "@/pages/not-found";
 
 // Helper layout
@@ -33,6 +37,10 @@ function Router() {
         <Route path="/directory" component={Directory} />
         <Route path="/profile/:id" component={ProfileDetail} />
         <Route path="/submit" component={SubmitProfile} />
+        <Route path="/tours" component={HeritageTours} />
+        <Route path="/tours/villages" component={PunjabVillages} />
+        <Route path="/tours/lahore-history" component={LahoreHistory} />
+        <Route path="/tours/modern-cities" component={ModernCities} />
         <Route path="/contact" component={Contact} />
         <Route component={NotFound} />
       </Switch>

@@ -1,10 +1,8 @@
-# 47DaPunjab
+# Heritage Roots Tracing App (47DaPunjab)
 
 ## Overview
 
-47DaPunjab is a heritage archive web application designed to help families separated during the 1947 partition of Punjab reconnect with their roots. The platform allows users to browse, search, and submit profiles of individuals and families who migrated, creating a digital bridge across borders and generations.
-
-The application features a profile directory with search and filtering capabilities, profile submission forms, inquiry systems for connecting with profile guardians, and a contact system for general questions.
+A heritage tracing web application designed to help families reconnect with their roots in Punjab/Pakistan. The platform serves as a digital archive for individuals and families who migrated during the 1947 partition, offering profile directories, heritage tours, and inquiry systems. The design follows a warm, nostalgic aesthetic inspired by Ancestry.com's genealogy patterns and museum archive presentations.
 
 ## User Preferences
 
@@ -14,80 +12,57 @@ Preferred communication style: Simple, everyday language.
 
 ### Frontend Architecture
 - **Framework**: React 18 with TypeScript
-- **Routing**: Wouter (lightweight React router)
+- **Routing**: Wouter (lightweight alternative to React Router)
 - **State Management**: TanStack React Query for server state
-- **Styling**: Tailwind CSS with custom heritage-themed color palette (saffron/orange primary, earthy browns)
-- **UI Components**: shadcn/ui component library built on Radix UI primitives
+- **Styling**: Tailwind CSS with custom heritage-themed design tokens
+- **UI Components**: shadcn/ui (Radix primitives with New York style)
 - **Animations**: Framer Motion for page transitions and scroll reveals
 - **Forms**: React Hook Form with Zod validation via @hookform/resolvers
-- **Fonts**: Playfair Display (serif for headings) and Lato (sans-serif for body)
+- **Typography**: Playfair Display (serif headings) + Lato (sans body text)
 
 ### Backend Architecture
-- **Runtime**: Node.js with Express.js
-- **Language**: TypeScript with ES modules
-- **API Style**: RESTful JSON API with typed contracts
+- **Runtime**: Node.js with Express
+- **Language**: TypeScript (ESM modules)
+- **API Structure**: RESTful endpoints defined in shared/routes.ts with Zod schemas
 - **Build Tool**: Vite for frontend, esbuild for server bundling
 
-### Data Layer
+### Data Storage
 - **Database**: PostgreSQL
 - **ORM**: Drizzle ORM with drizzle-zod for schema validation
-- **Schema Location**: `shared/schema.ts` defines all database tables
-- **Migrations**: Drizzle Kit (`db:push` command)
+- **Schema Location**: shared/schema.ts (profiles, inquiries, tour_inquiries tables)
+- **Migrations**: Managed via drizzle-kit push command
 
-### API Contract Pattern
-The project uses a shared API contract pattern in `shared/routes.ts`:
-- All API endpoints, methods, paths, and Zod schemas are defined in one place
-- Both frontend hooks and backend routes reference this contract
-- Provides type safety across the full stack
-
-### Project Structure
-```
-├── client/           # React frontend
-│   ├── src/
-│   │   ├── components/   # UI components (shadcn + custom)
-│   │   ├── hooks/        # React Query hooks for API calls
-│   │   ├── pages/        # Route components
-│   │   └── lib/          # Utilities (queryClient, cn helper)
-├── server/           # Express backend
-│   ├── index.ts      # Server entry point
-│   ├── routes.ts     # API route handlers
-│   ├── storage.ts    # Database access layer
-│   └── db.ts         # Drizzle database connection
-├── shared/           # Shared between frontend/backend
-│   ├── schema.ts     # Drizzle table definitions
-│   └── routes.ts     # API contract definitions
-└── migrations/       # Database migrations
-```
+### Shared Code Pattern
+The `shared/` directory contains code used by both frontend and backend:
+- `schema.ts`: Database table definitions and Zod insert schemas
+- `routes.ts`: API contract definitions with paths, methods, and response schemas
 
 ### Key Design Decisions
 
-1. **Shared Schema Approach**: Database schema and API contracts live in `shared/` directory, ensuring type consistency between frontend and backend.
+**Monorepo Structure**: Client and server code coexist with shared types/schemas, reducing duplication and ensuring type safety across the stack.
 
-2. **Storage Abstraction**: `server/storage.ts` implements an `IStorage` interface, making it easy to swap database implementations.
+**API Contract Pattern**: Routes are defined declaratively in shared/routes.ts with Zod schemas, enabling type-safe API calls from the frontend and automatic validation on the backend.
 
-3. **Path Aliases**: TypeScript path aliases (`@/` for client, `@shared/` for shared) simplify imports.
-
-4. **Development/Production Split**: Vite dev server with HMR in development, static file serving in production.
+**Heritage-Focused Theming**: Custom CSS variables in index.css define a warm, saffron/cream color palette. Design guidelines specify typography scales and component patterns for a nostalgic museum-archive aesthetic.
 
 ## External Dependencies
 
 ### Database
-- **PostgreSQL**: Primary database, connection via `DATABASE_URL` environment variable
-- **pg**: Node.js PostgreSQL client
-- **connect-pg-simple**: Session storage (available but may not be in active use)
+- PostgreSQL (required, connection via DATABASE_URL environment variable)
+- connect-pg-simple for session storage
 
 ### Key NPM Packages
-- **drizzle-orm** / **drizzle-kit**: Database ORM and migration tooling
-- **zod**: Runtime schema validation
-- **@tanstack/react-query**: Async state management
-- **framer-motion**: Animation library
-- **react-hook-form**: Form state management
-- **Radix UI**: Accessible component primitives (via shadcn/ui)
+- drizzle-orm + drizzle-kit: Database ORM and migrations
+- @tanstack/react-query: Server state management
+- framer-motion: Animations
+- react-hook-form + zod: Form handling and validation
+- Radix UI primitives: Accessible component foundations
+- embla-carousel-react: Carousel functionality
 
-### External Services
-- **Google Fonts**: Playfair Display and Lato fonts loaded via CDN
-- **Unsplash**: Placeholder images for profiles and hero sections (direct image URLs)
+### Fonts (External)
+- Google Fonts: Playfair Display, Lato, DM Sans, Fira Code, Geist Mono
 
-### Environment Variables Required
-- `DATABASE_URL`: PostgreSQL connection string (required)
-- `NODE_ENV`: development or production
+### Development Tools
+- Vite with React plugin
+- @replit/vite-plugin-runtime-error-modal for error handling
+- tsx for TypeScript execution
