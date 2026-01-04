@@ -26,10 +26,10 @@ export default function Home() {
       <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden">
         {/* Background Image with Overlay */}
         <div className="absolute inset-0 z-0">
-          {/* Unsplash image: Punjab fields sunset rural */}
+          {/* Unsplash image: Golden wheat fields */}
           <img 
-            src="https://images.unsplash.com/photo-1541364577457-4186419504f7?q=80&w=2070&auto=format&fit=crop"
-            alt="Rural Punjab Landscape"
+            src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=2232&auto=format&fit=crop"
+            alt="Rural Punjab Landscape - Golden Wheat Fields"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-background"></div>
