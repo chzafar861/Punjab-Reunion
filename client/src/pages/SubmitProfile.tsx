@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -9,7 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, UploadCloud } from "lucide-react";
+import { Loader2, UploadCloud, CheckCircle, Image } from "lucide-react";
+import { useUpload } from "@/hooks/use-upload";
 
 // Form validation schema - all fields required
 const profileFormSchema = z.object({
@@ -18,7 +20,7 @@ const profileFormSchema = z.object({
   district: z.string().min(1, "District is required"),
   story: z.string().min(1, "Story is required"),
   currentLocation: z.string().min(1, "Current location is required"),
-  photoUrl: z.string().min(1, "Photo URL is required").url("Please enter a valid URL"),
+  photoUrl: z.string().min(1, "Photo is required"),
   yearLeft: z.number().optional(),
 });
 
@@ -28,6 +30,24 @@ export default function SubmitProfile() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const createProfile = useCreateProfile();
+  const [uploadedFileName, setUploadedFileName] = useState<string>("");
+  const { uploadFile, isUploading } = useUpload({
+    onSuccess: (response) => {
+      form.setValue("photoUrl", response.objectPath);
+      setUploadedFileName(response.metadata.name);
+      toast({
+        title: "Photo Uploaded",
+        description: "Your image has been uploaded successfully.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Upload Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileFormSchema),
@@ -40,6 +60,21 @@ export default function SubmitProfile() {
       photoUrl: "",
     },
   });
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith("image/")) {
+        toast({
+          title: "Invalid File",
+          description: "Please select an image file.",
+          variant: "destructive",
+        });
+        return;
+      }
+      await uploadFile(file);
+    }
+  };
 
   const onSubmit = (data: ProfileFormData) => {
     createProfile.mutate(data, {
@@ -138,15 +173,43 @@ export default function SubmitProfile() {
               <div className="space-y-4">
                 <h3 className="font-semibold text-lg text-secondary border-b pb-2">Photo</h3>
                 <div className="space-y-2">
-                   <Label htmlFor="photoUrl">Photo URL <span className="text-destructive">*</span></Label>
-                   <div className="flex gap-2">
-                     <Input id="photoUrl" data-testid="input-photourl" placeholder="https://..." {...form.register("photoUrl")} className="bg-muted/30" />
-                     <Button type="button" variant="outline" size="icon" title="Upload coming soon">
-                       <UploadCloud className="w-4 h-4" />
-                     </Button>
+                   <Label htmlFor="photo">Upload Photo <span className="text-destructive">*</span></Label>
+                   <div className="flex flex-col gap-3">
+                     <div className="flex gap-2 items-center">
+                       <label 
+                         htmlFor="photo-upload" 
+                         className="flex items-center gap-2 cursor-pointer border border-dashed border-border rounded-lg p-4 w-full bg-muted/30 hover-elevate transition-colors"
+                       >
+                         {isUploading ? (
+                           <>
+                             <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                             <span className="text-muted-foreground">Uploading...</span>
+                           </>
+                         ) : uploadedFileName ? (
+                           <>
+                             <CheckCircle className="w-5 h-5 text-green-600" />
+                             <span className="text-foreground">{uploadedFileName}</span>
+                           </>
+                         ) : (
+                           <>
+                             <Image className="w-5 h-5 text-muted-foreground" />
+                             <span className="text-muted-foreground">Click to select an image from your device</span>
+                           </>
+                         )}
+                       </label>
+                       <input
+                         id="photo-upload"
+                         type="file"
+                         accept="image/*"
+                         className="hidden"
+                         onChange={handleFileChange}
+                         disabled={isUploading}
+                         data-testid="input-photo-upload"
+                       />
+                     </div>
                    </div>
                    {form.formState.errors.photoUrl && <p className="text-sm text-destructive">{form.formState.errors.photoUrl.message}</p>}
-                   <p className="text-xs text-muted-foreground">Provide a link to a hosted image.</p>
+                   <p className="text-xs text-muted-foreground">Select an image file from your device (JPG, PNG, etc.)</p>
                 </div>
               </div>
 
@@ -156,7 +219,7 @@ export default function SubmitProfile() {
                   size="lg" 
                   data-testid="button-submit-profile"
                   className="w-full bg-primary text-white font-semibold text-lg rounded-xl shadow-lg shadow-primary/20"
-                  disabled={createProfile.isPending}
+                  disabled={createProfile.isPending || isUploading}
                 >
                   {createProfile.isPending ? (
                     <>
