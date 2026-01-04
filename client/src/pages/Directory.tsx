@@ -33,8 +33,8 @@ export default function Directory() {
   // Debounce could be added here for production
   const { data: profiles, isLoading } = useProfiles(search, district === "all" ? "" : district);
 
-  // Derive unique districts for filter
-  const districts = Array.from(new Set(profiles?.map(p => p.district) || [])).sort();
+  // Derive unique districts for filter (filter out empty strings)
+  const districts = Array.from(new Set(profiles?.map(p => p.district).filter(d => d && d.trim()) || [])).sort();
 
   return (
     <div className="min-h-screen bg-background pb-24">
