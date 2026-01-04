@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { api, type ProfileInput } from "@shared/routes";
+import { z } from "zod";
 import { useCreateProfile } from "@/hooks/use-profiles";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
@@ -11,24 +11,37 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Loader2, UploadCloud } from "lucide-react";
 
+// Form validation schema - all fields required
+const profileFormSchema = z.object({
+  fullName: z.string().min(1, "Full name is required"),
+  villageName: z.string().min(1, "Village name is required"),
+  district: z.string().min(1, "District is required"),
+  story: z.string().min(1, "Story is required"),
+  currentLocation: z.string().min(1, "Current location is required"),
+  photoUrl: z.string().min(1, "Photo URL is required").url("Please enter a valid URL"),
+  yearLeft: z.number().optional(),
+});
+
+type ProfileFormData = z.infer<typeof profileFormSchema>;
+
 export default function SubmitProfile() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const createProfile = useCreateProfile();
 
-  const form = useForm<ProfileInput>({
-    resolver: zodResolver(api.profiles.create.input),
+  const form = useForm<ProfileFormData>({
+    resolver: zodResolver(profileFormSchema),
     defaultValues: {
       fullName: "",
       villageName: "",
       district: "",
       story: "",
       currentLocation: "",
-      photoUrl: "", // Optional
+      photoUrl: "",
     },
   });
 
-  const onSubmit = (data: ProfileInput) => {
+  const onSubmit = (data: ProfileFormData) => {
     createProfile.mutate(data, {
       onSuccess: () => {
         toast({
@@ -72,27 +85,27 @@ export default function SubmitProfile() {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="fullName">Full Name</Label>
-                    <Input id="fullName" placeholder="e.g. Kartar Singh" {...form.register("fullName")} className="bg-muted/30" />
+                    <Label htmlFor="fullName">Full Name <span className="text-destructive">*</span></Label>
+                    <Input id="fullName" data-testid="input-fullname" placeholder="e.g. Kartar Singh" {...form.register("fullName")} className="bg-muted/30" />
                     {form.formState.errors.fullName && <p className="text-sm text-destructive">{form.formState.errors.fullName.message}</p>}
                   </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="yearLeft">Year Left (Approximate)</Label>
-                    <Input id="yearLeft" type="number" placeholder="1947" {...form.register("yearLeft", { valueAsNumber: true })} className="bg-muted/30" />
+                    <Input id="yearLeft" data-testid="input-yearleft" type="number" placeholder="1947" {...form.register("yearLeft", { valueAsNumber: true })} className="bg-muted/30" />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="villageName">Village Name</Label>
-                    <Input id="villageName" placeholder="Name of village left behind" {...form.register("villageName")} className="bg-muted/30" />
+                    <Label htmlFor="villageName">Village Name <span className="text-destructive">*</span></Label>
+                    <Input id="villageName" data-testid="input-villagename" placeholder="Name of village left behind" {...form.register("villageName")} className="bg-muted/30" />
                     {form.formState.errors.villageName && <p className="text-sm text-destructive">{form.formState.errors.villageName.message}</p>}
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="district">District</Label>
-                    <Input id="district" placeholder="District in Punjab" {...form.register("district")} className="bg-muted/30" />
+                    <Label htmlFor="district">District <span className="text-destructive">*</span></Label>
+                    <Input id="district" data-testid="input-district" placeholder="District in Punjab" {...form.register("district")} className="bg-muted/30" />
                     {form.formState.errors.district && <p className="text-sm text-destructive">{form.formState.errors.district.message}</p>}
                   </div>
                 </div>
@@ -103,9 +116,10 @@ export default function SubmitProfile() {
                 <h3 className="font-semibold text-lg text-secondary border-b pb-2">Their Story</h3>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="story">Detailed History</Label>
+                  <Label htmlFor="story">Detailed History <span className="text-destructive">*</span></Label>
                   <Textarea 
                     id="story" 
+                    data-testid="input-story"
                     placeholder="Tell us about their journey, family members, specific memories, or identifying details..." 
                     className="min-h-[150px] bg-muted/30 resize-y"
                     {...form.register("story")}
@@ -114,8 +128,9 @@ export default function SubmitProfile() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="currentLocation">Current Location (If known)</Label>
-                  <Input id="currentLocation" placeholder="Where do they (or their descendants) live now?" {...form.register("currentLocation")} className="bg-muted/30" />
+                  <Label htmlFor="currentLocation">Current Location <span className="text-destructive">*</span></Label>
+                  <Input id="currentLocation" data-testid="input-currentlocation" placeholder="Where do they (or their descendants) live now?" {...form.register("currentLocation")} className="bg-muted/30" />
+                  {form.formState.errors.currentLocation && <p className="text-sm text-destructive">{form.formState.errors.currentLocation.message}</p>}
                 </div>
               </div>
 
@@ -123,15 +138,15 @@ export default function SubmitProfile() {
               <div className="space-y-4">
                 <h3 className="font-semibold text-lg text-secondary border-b pb-2">Photo</h3>
                 <div className="space-y-2">
-                   <Label htmlFor="photoUrl">Photo URL (Optional)</Label>
+                   <Label htmlFor="photoUrl">Photo URL <span className="text-destructive">*</span></Label>
                    <div className="flex gap-2">
-                     <Input id="photoUrl" placeholder="https://..." {...form.register("photoUrl")} className="bg-muted/30" />
-                     {/* In a real app, this would be a file upload button uploading to S3/Cloudinary */}
+                     <Input id="photoUrl" data-testid="input-photourl" placeholder="https://..." {...form.register("photoUrl")} className="bg-muted/30" />
                      <Button type="button" variant="outline" size="icon" title="Upload coming soon">
                        <UploadCloud className="w-4 h-4" />
                      </Button>
                    </div>
-                   <p className="text-xs text-muted-foreground">Provide a link to a hosted image for now.</p>
+                   {form.formState.errors.photoUrl && <p className="text-sm text-destructive">{form.formState.errors.photoUrl.message}</p>}
+                   <p className="text-xs text-muted-foreground">Provide a link to a hosted image.</p>
                 </div>
               </div>
 
@@ -139,7 +154,8 @@ export default function SubmitProfile() {
                 <Button 
                   type="submit" 
                   size="lg" 
-                  className="w-full bg-primary hover:bg-primary/90 text-white font-semibold text-lg h-12 rounded-xl shadow-lg shadow-primary/20"
+                  data-testid="button-submit-profile"
+                  className="w-full bg-primary text-white font-semibold text-lg rounded-xl shadow-lg shadow-primary/20"
                   disabled={createProfile.isPending}
                 >
                   {createProfile.isPending ? (
