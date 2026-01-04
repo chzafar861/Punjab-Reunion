@@ -135,14 +135,14 @@ export default function ProfileDetail() {
       <div className="container mx-auto px-4">
         <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-border">
           {/* Header Image Area - Mobile Only */}
-          <div className="md:hidden h-64 w-full bg-muted">
-             <img src={displayImage} alt={profile.fullName} className="w-full h-full object-cover" />
+          <div className="md:hidden w-full bg-muted flex items-center justify-center">
+             <img src={displayImage} alt={profile.fullName} className="w-full h-auto max-h-[400px] object-contain" />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-12">
             {/* Sidebar / Image - Desktop */}
-            <div className="hidden md:block md:col-span-5 h-full min-h-[500px] relative bg-muted">
-               <img src={displayImage} alt={profile.fullName} className="absolute inset-0 w-full h-full object-cover" />
+            <div className="hidden md:block md:col-span-5 min-h-[500px] relative bg-muted flex items-center justify-center">
+               <img src={displayImage} alt={profile.fullName} className="w-full h-full object-contain" />
                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
             </div>
 
