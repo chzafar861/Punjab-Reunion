@@ -6,6 +6,7 @@ import { Link } from "wouter";
 import { api, type TourInquiryInput } from "@shared/routes";
 import { useCreateTourInquiry } from "@/hooks/use-tour-inquiries";
 import { useToast } from "@/hooks/use-toast";
+import { useSEO } from "@/hooks/use-seo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -96,6 +97,13 @@ const historicalImages = [
 ];
 
 export default function HeritageTours() {
+  useSEO({
+    title: "Heritage Tours & Services",
+    description: "Experience Punjab heritage through virtual home visits, guided tours, and heritage import services. Book $100 video calls to see your ancestral village, or order authentic soil and handicrafts from your family's homeland.",
+    keywords: "Punjab heritage tour, virtual home visit, ancestral village video call, heritage import, Punjab soil, handicrafts Pakistan, Lahore tour, village visit",
+    canonicalPath: "/tours",
+  });
+
   const { toast } = useToast();
   const createTourInquiry = useCreateTourInquiry();
   const [activeTab, setActiveTab] = useState<"video" | "import">("video");

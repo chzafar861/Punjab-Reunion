@@ -10,7 +10,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useSEO } from "@/hooks/use-seo";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { type ProfileComment } from "@shared/schema";
@@ -34,6 +34,18 @@ export default function ProfileDetail() {
   const id = parseInt(params?.id || "0");
   const { data: profile, isLoading } = useProfile(id);
   const { toast } = useToast();
+
+  useSEO({
+    title: profile ? `${profile.fullName} from ${profile.villageName}` : "Profile Details",
+    description: profile 
+      ? `Heritage profile of ${profile.fullName} from ${profile.villageName}, ${profile.district}. ${profile.story?.slice(0, 150)}...` 
+      : "View detailed heritage profile and family story from pre-partition Punjab.",
+    keywords: profile 
+      ? `${profile.villageName}, ${profile.district}, Punjab heritage, partition family, ${profile.fullName}`
+      : "heritage profile, partition story, Punjab family",
+    canonicalPath: `/profile/${id}`,
+    ogType: "article",
+  });
   
   const { data: comments = [], isLoading: commentsLoading } = useQuery<ProfileComment[]>({
     queryKey: ['/api/profiles', id, 'comments'],

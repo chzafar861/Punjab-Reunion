@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://47dapunjab.replit.app/sitemap.xml
+
+# Crawl-delay for polite crawling
+Crawl-delay: 1
+
+# Disallow admin/private paths (if any in the future)
+Disallow: /api/

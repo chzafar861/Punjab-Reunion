@@ -3,6 +3,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useCreateInquiry } from "@/hooks/use-inquiries";
 import { useToast } from "@/hooks/use-toast";
+import { useSEO } from "@/hooks/use-seo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -20,6 +21,13 @@ const contactFormSchema = z.object({
 type ContactFormData = z.infer<typeof contactFormSchema>;
 
 export default function Contact() {
+  useSEO({
+    title: "Contact Us - Get in Touch",
+    description: "Have questions about the 47DaPunjab heritage platform? Contact us for help with profile submissions, heritage tours, or finding your ancestral roots in Punjab.",
+    keywords: "contact 47DaPunjab, heritage inquiry, partition research help, ancestral village search, Punjab roots",
+    canonicalPath: "/contact",
+  });
+
   const { toast } = useToast();
   const createInquiry = useCreateInquiry();
 

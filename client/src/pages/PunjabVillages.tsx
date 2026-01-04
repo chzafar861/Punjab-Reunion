@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useSEO } from "@/hooks/use-seo";
 import { 
   TreeDeciduous, 
   ArrowLeft,
@@ -76,6 +77,13 @@ The emotional journey of standing where your ancestors once lived cannot be desc
 ];
 
 export default function PunjabVillages() {
+  useSEO({
+    title: "Punjab Villages - Ancestral Homes and Heritage",
+    description: "Explore the ancestral villages of Punjab where generations of families lived before 1947. Learn about Lyallpur, Rawalpindi, Sialkot, Gujranwala and find your family's roots.",
+    keywords: "Punjab villages, ancestral village, Lyallpur, Faisalabad, Rawalpindi, Sialkot, Gujranwala, partition villages, family roots",
+    canonicalPath: "/tours/villages",
+  });
+
   return (
     <main className="flex-1">
       <section className="relative min-h-[60vh] flex items-center justify-center overflow-hidden">

@@ -1,7 +1,14 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
+import { useSEO } from "@/hooks/use-seo";
 
 export default function NotFound() {
+  useSEO({
+    title: "Page Not Found",
+    description: "The page you are looking for could not be found. Return to 47DaPunjab to explore Punjab heritage and ancestral records.",
+    canonicalPath: "/404",
+  });
+
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
       <Card className="w-full max-w-md mx-4">

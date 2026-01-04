@@ -5,12 +5,20 @@ import { motion } from "framer-motion";
 import { useProfiles } from "@/hooks/use-profiles";
 import { ProfileCard } from "@/components/ProfileCard";
 import { Button } from "@/components/ui/button";
+import { useSEO } from "@/hooks/use-seo";
 import heroCover from "@assets/generated_images/47dapunjab_heritage_cover_banner.png";
 
 export default function Home() {
   const [search, setSearch] = useState("");
   const [, setLocation] = useLocation();
   const { data: profiles, isLoading } = useProfiles();
+
+  useSEO({
+    title: "Home - Reconnecting Roots Across Borders",
+    description: "A digital heritage platform helping the Punjabi diaspora reconnect with ancestral villages in Pakistan. Document family stories from 1947 partition, explore heritage tours, and preserve precious memories.",
+    keywords: "Punjab heritage, 1947 partition, ancestry tracing, Sikh genealogy, ancestral village Pakistan, family roots Punjab, partition stories",
+    canonicalPath: "/",
+  });
   
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

@@ -5,6 +5,7 @@ import { useProfiles } from "@/hooks/use-profiles";
 import { ProfileCard } from "@/components/ProfileCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useSEO } from "@/hooks/use-seo";
 import {
   Select,
   SelectContent,
@@ -14,6 +15,13 @@ import {
 } from "@/components/ui/select";
 
 export default function Directory() {
+  useSEO({
+    title: "Profile Directory - Search Ancestral Records",
+    description: "Browse and search through our directory of profiles documenting families who migrated during the 1947 partition. Find records by village name, district, or family name.",
+    keywords: "partition records, Punjab directory, ancestral village search, family records 1947, Sikh migration records, Pakistan Punjab villages",
+    canonicalPath: "/directory",
+  });
+
   const [location] = useLocation();
   // Parse search params from URL manually since wouter doesn't provide a hook for it yet easily
   const searchParams = new URLSearchParams(window.location.search);

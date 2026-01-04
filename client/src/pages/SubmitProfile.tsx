@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Loader2, UploadCloud, CheckCircle, Image } from "lucide-react";
 import { useUpload } from "@/hooks/use-upload";
+import { useSEO } from "@/hooks/use-seo";
 
 // Form validation schema - all fields required except yearLeft, email, phone
 const profileFormSchema = z.object({
@@ -29,6 +30,13 @@ const profileFormSchema = z.object({
 type ProfileFormData = z.infer<typeof profileFormSchema>;
 
 export default function SubmitProfile() {
+  useSEO({
+    title: "Submit a Profile - Document Your Heritage",
+    description: "Help preserve Punjab heritage by submitting a profile of someone who migrated during the 1947 partition. Document family stories, ancestral villages, and precious memories for future generations.",
+    keywords: "submit profile, document heritage, partition story, family history submission, ancestral record, Punjab migration",
+    canonicalPath: "/submit",
+  });
+
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const createProfile = useCreateProfile();

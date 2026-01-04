@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useSEO } from "@/hooks/use-seo";
 import { 
   Building2, 
   ArrowLeft,
@@ -87,6 +88,13 @@ Mobile connectivity is excellent throughout the country, with 4G coverage in mos
 ];
 
 export default function ModernCities() {
+  useSEO({
+    title: "Modern Pakistan - Contemporary Cities and Travel",
+    description: "Experience the vibrant, developing cities of modern Pakistan. Explore Lahore, Islamabad, Karachi and Faisalabad with travel tips for diaspora visitors returning to their roots.",
+    keywords: "modern Pakistan, Lahore today, Islamabad, Karachi, Faisalabad, Pakistan travel, diaspora visit, CPEC development",
+    canonicalPath: "/tours/modern-cities",
+  });
+
   return (
     <main className="flex-1">
       <section className="relative min-h-[60vh] flex items-center justify-center overflow-hidden">

@@ -1,0 +1,21 @@
+{
+  "name": "47DaPunjab - Punjab Heritage Platform",
+  "short_name": "47DaPunjab",
+  "description": "Reconnecting the Punjabi diaspora with ancestral villages in Pakistan",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FDF5E6",
+  "theme_color": "#D2691E",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useSEO } from "@/hooks/use-seo";
 import { 
   Landmark, 
   ArrowLeft,
@@ -88,6 +89,13 @@ The literary scene was particularly vibrant. Progressive writers gathered at caf
 ];
 
 export default function LahoreHistory() {
+  useSEO({
+    title: "Historic Lahore - Cultural Capital of Punjab",
+    description: "Discover the rich history of Lahore, Punjab's cultural capital. Explore Badshahi Mosque, Lahore Fort, Shalimar Gardens, and the vibrant Walled City with centuries of Mughal heritage.",
+    keywords: "Lahore history, Badshahi Mosque, Lahore Fort, Mughal architecture, Walled City, Punjab capital, Shalimar Gardens, heritage site",
+    canonicalPath: "/tours/lahore-history",
+  });
+
   return (
     <main className="flex-1">
       <section className="relative min-h-[60vh] flex items-center justify-center overflow-hidden">
