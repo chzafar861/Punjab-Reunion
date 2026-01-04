@@ -100,7 +100,7 @@ export default function Contact() {
                 </div>
                 <div>
                   <h3 className="font-bold text-secondary">Phone</h3>
-                  <p className="text-muted-foreground">+91 (123) 456-7890</p>
+                  <p className="text-muted-foreground">+92 325 4877717</p>
                 </div>
               </div>
 
@@ -111,9 +111,8 @@ export default function Contact() {
                 <div>
                   <h3 className="font-bold text-secondary">Office</h3>
                   <p className="text-muted-foreground">
-                    Heritage Center<br/>
-                    Amritsar, Punjab<br/>
-                    India
+                    Gujranwala, Punjab<br/>
+                    Pakistan
                   </p>
                 </div>
               </div>
