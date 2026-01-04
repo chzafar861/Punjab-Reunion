@@ -10,7 +10,7 @@ interface SEOProps {
 }
 
 const BASE_TITLE = "47DaPunjab";
-const BASE_URL = "https://47dapunjab.replit.app";
+const BASE_URL = "https://47dapunjab.com";
 const DEFAULT_OG_IMAGE = "/og-cover.png";
 const DEFAULT_KEYWORDS = "Punjab heritage, 1947 partition, ancestry tracing, Sikh genealogy, ancestral village Pakistan";
 

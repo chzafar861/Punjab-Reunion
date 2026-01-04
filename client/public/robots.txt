@@ -1,7 +1,7 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://47dapunjab.replit.app/sitemap.xml
+Sitemap: https://47dapunjab.com/sitemap.xml
 
 # Crawl-delay for polite crawling
 Crawl-delay: 1
