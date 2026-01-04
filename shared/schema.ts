@@ -39,8 +39,15 @@ export const tourInquiries = pgTable("tour_inquiries", {
 
 // === BASE SCHEMAS ===
 export const insertProfileSchema = createInsertSchema(profiles).omit({ id: true, createdAt: true });
-export const insertInquirySchema = createInsertSchema(inquiries).omit({ id: true, createdAt: true });
-export const insertTourInquirySchema = createInsertSchema(tourInquiries).omit({ id: true, createdAt: true });
+export const insertInquirySchema = createInsertSchema(inquiries).omit({ id: true, createdAt: true }).extend({
+  phone: z.string().optional(),
+  profileId: z.number().optional(),
+});
+export const insertTourInquirySchema = createInsertSchema(tourInquiries).omit({ id: true, createdAt: true }).extend({
+  travelDates: z.string().optional(),
+  groupSize: z.number().optional(),
+  message: z.string().optional(),
+});
 
 // === EXPLICIT API CONTRACT TYPES ===
 export type Profile = typeof profiles.$inferSelect;
