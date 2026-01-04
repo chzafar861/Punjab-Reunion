@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { api, type InquiryInput } from "@shared/routes";
+import { z } from "zod";
 import { useCreateInquiry } from "@/hooks/use-inquiries";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -9,12 +9,22 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Mail, Phone, MapPin, Send } from "lucide-react";
 
+// Form validation schema with required fields
+const contactFormSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().min(1, "Email is required").email("Please enter a valid email"),
+  phone: z.string().optional(),
+  message: z.string().min(1, "Message is required"),
+});
+
+type ContactFormData = z.infer<typeof contactFormSchema>;
+
 export default function Contact() {
   const { toast } = useToast();
   const createInquiry = useCreateInquiry();
 
-  const form = useForm<InquiryInput>({
-    resolver: zodResolver(api.inquiries.create.input),
+  const form = useForm<ContactFormData>({
+    resolver: zodResolver(contactFormSchema),
     defaultValues: {
       name: "",
       email: "",
@@ -23,7 +33,7 @@ export default function Contact() {
     },
   });
 
-  const onSubmit = (data: InquiryInput) => {
+  const onSubmit = (data: ContactFormData) => {
     createInquiry.mutate(data, {
       onSuccess: () => {
         toast({
@@ -107,31 +117,32 @@ export default function Contact() {
             <h2 className="font-serif text-2xl font-bold text-secondary mb-6">Send a Message</h2>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="name">Your Name</Label>
-                <Input id="name" {...form.register("name")} />
+                <Label htmlFor="name">Your Name <span className="text-destructive">*</span></Label>
+                <Input id="name" data-testid="input-name" {...form.register("name")} />
                 {form.formState.errors.name && <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input id="email" type="email" {...form.register("email")} />
+                <Label htmlFor="email">Email Address <span className="text-destructive">*</span></Label>
+                <Input id="email" type="email" data-testid="input-email" {...form.register("email")} />
                 {form.formState.errors.email && <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone (Optional)</Label>
-                <Input id="phone" {...form.register("phone")} />
+                <Input id="phone" data-testid="input-phone" {...form.register("phone")} />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="message">How can we help?</Label>
-                <Textarea id="message" rows={5} {...form.register("message")} />
+                <Label htmlFor="message">How can we help? <span className="text-destructive">*</span></Label>
+                <Textarea id="message" rows={5} data-testid="input-message" {...form.register("message")} />
                 {form.formState.errors.message && <p className="text-sm text-destructive">{form.formState.errors.message.message}</p>}
               </div>
 
               <Button 
                 type="submit" 
-                className="w-full bg-secondary hover:bg-secondary/90 text-white font-semibold"
+                data-testid="button-submit-contact"
+                className="w-full bg-secondary text-white font-semibold"
                 disabled={createInquiry.isPending}
               >
                 {createInquiry.isPending ? "Sending..." : (
