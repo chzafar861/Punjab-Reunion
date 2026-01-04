@@ -134,85 +134,80 @@ export default function ProfileDetail() {
     <div className="min-h-screen bg-background pb-24 pt-8">
       <div className="container mx-auto px-4">
         <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border border-border">
-          {/* Header Image Area - Mobile Only */}
-          <div className="md:hidden w-full bg-muted flex items-center justify-center">
-             <img src={displayImage} alt={profile.fullName} className="w-full h-auto max-h-[400px] object-contain" />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-12">
-            {/* Sidebar / Image - Desktop */}
-            <div className="hidden md:block md:col-span-5 min-h-[500px] relative bg-muted flex items-center justify-center">
-               <img src={displayImage} alt={profile.fullName} className="w-full h-full object-contain" />
-               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+          {/* Header with Details */}
+          <div className="p-8 md:p-12 space-y-6">
+            <div>
+              <div className="flex flex-wrap gap-2 mb-4">
+                 <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-bold uppercase rounded-full tracking-wider">
+                   {profile.district}
+                 </span>
+                 {profile.yearLeft && (
+                   <span className="px-3 py-1 bg-secondary/10 text-secondary text-xs font-bold uppercase rounded-full tracking-wider">
+                     Since {profile.yearLeft}
+                   </span>
+                 )}
+              </div>
+              <h1 className="font-serif text-4xl md:text-5xl font-bold text-secondary mb-2">
+                {profile.fullName}
+              </h1>
+              <p className="text-xl text-muted-foreground flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-primary" /> 
+                Village {profile.villageName}
+              </p>
             </div>
 
-            {/* Content Area */}
-            <div className="md:col-span-7 p-8 md:p-12 space-y-8">
-              <div>
-                <div className="flex flex-wrap gap-2 mb-4">
-                   <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-bold uppercase rounded-full tracking-wider">
-                     {profile.district}
-                   </span>
-                   {profile.yearLeft && (
-                     <span className="px-3 py-1 bg-secondary/10 text-secondary text-xs font-bold uppercase rounded-full tracking-wider">
-                       Since {profile.yearLeft}
-                     </span>
-                   )}
-                </div>
-                <h1 className="font-serif text-4xl md:text-5xl font-bold text-secondary mb-2">
-                  {profile.fullName}
-                </h1>
-                <p className="text-xl text-muted-foreground flex items-center gap-2">
-                  <MapPin className="w-5 h-5 text-primary" /> 
-                  Village {profile.villageName}
-                </p>
-              </div>
-
-              <div className="prose prose-stone max-w-none">
-                <h3 className="font-serif text-2xl font-bold text-secondary">The Story</h3>
-                <p className="text-foreground/80 leading-relaxed whitespace-pre-wrap">
-                  {profile.story}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 py-6 border-y border-border">
-                <div className="flex items-start gap-3">
-                  <Globe className="w-5 h-5 text-primary mt-1" />
-                  <div>
-                    <span className="block text-sm font-semibold text-secondary uppercase">Current Location</span>
-                    <span className="text-foreground">{profile.currentLocation || "Unknown"}</span>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Calendar className="w-5 h-5 text-primary mt-1" />
-                  <div>
-                    <span className="block text-sm font-semibold text-secondary uppercase">Year of Migration</span>
-                    <span className="text-foreground">{profile.yearLeft || "Unknown"}</span>
-                  </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 py-6 border-y border-border">
+              <div className="flex items-start gap-3">
+                <Globe className="w-5 h-5 text-primary mt-1" />
+                <div>
+                  <span className="block text-sm font-semibold text-secondary uppercase">Current Location</span>
+                  <span className="text-foreground">{profile.currentLocation || "Unknown"}</span>
                 </div>
               </div>
-
-              {/* Share Button */}
-              <div className="flex gap-4 pt-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="lg" className="flex-1 rounded-full border-secondary text-secondary" data-testid="button-share-profile">
-                      <Share2 className="w-4 h-4 mr-2" /> Share Profile
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="center" className="w-48">
-                    <DropdownMenuItem onClick={() => handleShare("facebook")} data-testid="share-facebook">
-                      <Facebook className="w-4 h-4 mr-2" /> Facebook
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleShare("twitter")} data-testid="share-twitter">
-                      <Twitter className="w-4 h-4 mr-2" /> Twitter
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleShare("copy")} data-testid="share-copy-link">
-                      <LinkIcon className="w-4 h-4 mr-2" /> Copy Link
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+              <div className="flex items-start gap-3">
+                <Calendar className="w-5 h-5 text-primary mt-1" />
+                <div>
+                  <span className="block text-sm font-semibold text-secondary uppercase">Year of Migration</span>
+                  <span className="text-foreground">{profile.yearLeft || "Unknown"}</span>
+                </div>
               </div>
+            </div>
+          </div>
+
+          {/* Photo Section */}
+          <div className="w-full bg-muted flex items-center justify-center p-4">
+             <img src={displayImage} alt={profile.fullName} className="max-w-full max-h-[500px] object-contain rounded-lg" />
+          </div>
+
+          {/* Story Section */}
+          <div className="p-8 md:p-12 space-y-8">
+            <div className="prose prose-stone max-w-none">
+              <h3 className="font-serif text-2xl font-bold text-secondary">The Story</h3>
+              <p className="text-foreground/80 leading-relaxed whitespace-pre-wrap">
+                {profile.story}
+              </p>
+            </div>
+
+            {/* Share Button */}
+            <div className="flex gap-4 pt-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="lg" className="flex-1 rounded-full border-secondary text-secondary" data-testid="button-share-profile">
+                    <Share2 className="w-4 h-4 mr-2" /> Share Profile
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="center" className="w-48">
+                  <DropdownMenuItem onClick={() => handleShare("facebook")} data-testid="share-facebook">
+                    <Facebook className="w-4 h-4 mr-2" /> Facebook
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleShare("twitter")} data-testid="share-twitter">
+                    <Twitter className="w-4 h-4 mr-2" /> Twitter
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleShare("copy")} data-testid="share-copy-link">
+                    <LinkIcon className="w-4 h-4 mr-2" /> Copy Link
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
 
