@@ -12,6 +12,16 @@ export const profiles = pgTable("profiles", {
   currentLocation: text("current_location"),
   story: text("story").notNull(),
   photoUrl: text("photo_url"),
+  email: text("email"),
+  phone: text("phone"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const profileComments = pgTable("profile_comments", {
+  id: serial("id").primaryKey(),
+  profileId: integer("profile_id").notNull(),
+  authorName: text("author_name").notNull(),
+  content: text("content").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -38,7 +48,10 @@ export const tourInquiries = pgTable("tour_inquiries", {
 });
 
 // === BASE SCHEMAS ===
-export const insertProfileSchema = createInsertSchema(profiles).omit({ id: true, createdAt: true });
+export const insertProfileSchema = createInsertSchema(profiles).omit({ id: true, createdAt: true }).extend({
+  email: z.string().email().optional(),
+  phone: z.string().optional(),
+});
 export const insertInquirySchema = createInsertSchema(inquiries).omit({ id: true, createdAt: true }).extend({
   phone: z.string().optional(),
   profileId: z.number().optional(),
@@ -48,6 +61,7 @@ export const insertTourInquirySchema = createInsertSchema(tourInquiries).omit({ 
   groupSize: z.number().optional(),
   message: z.string().optional(),
 });
+export const insertProfileCommentSchema = createInsertSchema(profileComments).omit({ id: true, createdAt: true });
 
 // === EXPLICIT API CONTRACT TYPES ===
 export type Profile = typeof profiles.$inferSelect;
@@ -56,10 +70,14 @@ export type Inquiry = typeof inquiries.$inferSelect;
 export type InsertInquiry = z.infer<typeof insertInquirySchema>;
 export type TourInquiry = typeof tourInquiries.$inferSelect;
 export type InsertTourInquiry = z.infer<typeof insertTourInquirySchema>;
+export type ProfileComment = typeof profileComments.$inferSelect;
+export type InsertProfileComment = z.infer<typeof insertProfileCommentSchema>;
 
 export type CreateProfileRequest = InsertProfile;
 export type CreateInquiryRequest = InsertInquiry;
 export type CreateTourInquiryRequest = InsertTourInquiry;
+export type CreateProfileCommentRequest = InsertProfileComment;
 
 export type ProfileResponse = Profile;
 export type ProfilesListResponse = Profile[];
+export type ProfileCommentsListResponse = ProfileComment[];

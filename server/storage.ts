@@ -1,5 +1,5 @@
 import { db } from "./db";
-import { profiles, inquiries, tourInquiries, type InsertProfile, type InsertInquiry, type InsertTourInquiry, type Profile, type Inquiry, type TourInquiry } from "@shared/schema";
+import { profiles, inquiries, tourInquiries, profileComments, type InsertProfile, type InsertInquiry, type InsertTourInquiry, type InsertProfileComment, type Profile, type Inquiry, type TourInquiry, type ProfileComment } from "@shared/schema";
 import { eq, ilike, or, desc } from "drizzle-orm";
 
 export interface IStorage {
@@ -8,6 +8,8 @@ export interface IStorage {
   createProfile(profile: InsertProfile): Promise<Profile>;
   createInquiry(inquiry: InsertInquiry): Promise<Inquiry>;
   createTourInquiry(tourInquiry: InsertTourInquiry): Promise<TourInquiry>;
+  getProfileComments(profileId: number): Promise<ProfileComment[]>;
+  createProfileComment(comment: InsertProfileComment): Promise<ProfileComment>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -53,6 +55,15 @@ export class DatabaseStorage implements IStorage {
   async createTourInquiry(tourInquiry: InsertTourInquiry): Promise<TourInquiry> {
     const [inquiry] = await db.insert(tourInquiries).values(tourInquiry).returning();
     return inquiry;
+  }
+
+  async getProfileComments(profileId: number): Promise<ProfileComment[]> {
+    return await db.select().from(profileComments).where(eq(profileComments.profileId, profileId)).orderBy(desc(profileComments.createdAt));
+  }
+
+  async createProfileComment(comment: InsertProfileComment): Promise<ProfileComment> {
+    const [newComment] = await db.insert(profileComments).values(comment).returning();
+    return newComment;
   }
 }
 

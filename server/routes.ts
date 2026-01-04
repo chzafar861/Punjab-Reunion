@@ -20,7 +20,18 @@ export async function registerRoutes(
       typeof search === 'string' ? search : undefined,
       typeof district === 'string' ? district : undefined
     );
-    res.json(profiles);
+    const publicProfiles = profiles.map((profile) => ({
+      id: profile.id,
+      fullName: profile.fullName,
+      villageName: profile.villageName,
+      district: profile.district,
+      yearLeft: profile.yearLeft,
+      currentLocation: profile.currentLocation,
+      story: profile.story,
+      photoUrl: profile.photoUrl,
+      createdAt: profile.createdAt,
+    }));
+    res.json(publicProfiles);
   });
 
   app.get(api.profiles.get.path, async (req, res) => {
@@ -28,14 +39,36 @@ export async function registerRoutes(
     if (!profile) {
       return res.status(404).json({ message: 'Profile not found' });
     }
-    res.json(profile);
+    const publicProfile = {
+      id: profile.id,
+      fullName: profile.fullName,
+      villageName: profile.villageName,
+      district: profile.district,
+      yearLeft: profile.yearLeft,
+      currentLocation: profile.currentLocation,
+      story: profile.story,
+      photoUrl: profile.photoUrl,
+      createdAt: profile.createdAt,
+    };
+    res.json(publicProfile);
   });
 
   app.post(api.profiles.create.path, async (req, res) => {
     try {
       const input = api.profiles.create.input.parse(req.body);
       const profile = await storage.createProfile(input);
-      res.status(201).json(profile);
+      const publicProfile = {
+        id: profile.id,
+        fullName: profile.fullName,
+        villageName: profile.villageName,
+        district: profile.district,
+        yearLeft: profile.yearLeft,
+        currentLocation: profile.currentLocation,
+        story: profile.story,
+        photoUrl: profile.photoUrl,
+        createdAt: profile.createdAt,
+      };
+      res.status(201).json(publicProfile);
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({
@@ -81,12 +114,19 @@ export async function registerRoutes(
     }
   });
 
-  // === TOUR INQUIRIES ===
-  app.post(api.tours.create.path, async (req, res) => {
+  // === PROFILE COMMENTS ===
+  app.get("/api/profiles/:profileId/comments", async (req, res) => {
+    const profileId = Number(req.params.profileId);
+    const comments = await storage.getProfileComments(profileId);
+    res.json(comments);
+  });
+
+  app.post("/api/profiles/:profileId/comments", async (req, res) => {
     try {
-      const input = api.tours.create.input.parse(req.body);
-      const inquiry = await storage.createTourInquiry(input);
-      res.status(201).json(inquiry);
+      const profileId = Number(req.params.profileId);
+      const input = api.comments.create.input.parse({ ...req.body, profileId });
+      const comment = await storage.createProfileComment(input);
+      res.status(201).json(comment);
     } catch (err) {
       if (err instanceof z.ZodError) {
         return res.status(400).json({

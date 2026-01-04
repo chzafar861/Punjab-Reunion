@@ -13,7 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Loader2, UploadCloud, CheckCircle, Image } from "lucide-react";
 import { useUpload } from "@/hooks/use-upload";
 
-// Form validation schema - all fields required
+// Form validation schema - all fields required except yearLeft, email, phone
 const profileFormSchema = z.object({
   fullName: z.string().min(1, "Full name is required"),
   villageName: z.string().min(1, "Village name is required"),
@@ -22,6 +22,8 @@ const profileFormSchema = z.object({
   currentLocation: z.string().min(1, "Current location is required"),
   photoUrl: z.string().min(1, "Photo is required"),
   yearLeft: z.number().optional(),
+  email: z.string().email("Please enter a valid email").optional().or(z.literal("")),
+  phone: z.string().optional(),
 });
 
 type ProfileFormData = z.infer<typeof profileFormSchema>;
@@ -58,6 +60,8 @@ export default function SubmitProfile() {
       story: "",
       currentLocation: "",
       photoUrl: "",
+      email: "",
+      phone: "",
     },
   });
 
@@ -77,7 +81,12 @@ export default function SubmitProfile() {
   };
 
   const onSubmit = (data: ProfileFormData) => {
-    createProfile.mutate(data, {
+    const cleanedData = {
+      ...data,
+      email: data.email || undefined,
+      phone: data.phone || undefined,
+    };
+    createProfile.mutate(cleanedData, {
       onSuccess: () => {
         toast({
           title: "Profile Submitted",
@@ -210,6 +219,25 @@ export default function SubmitProfile() {
                    </div>
                    {form.formState.errors.photoUrl && <p className="text-sm text-destructive">{form.formState.errors.photoUrl.message}</p>}
                    <p className="text-xs text-muted-foreground">Select an image file from your device (JPG, PNG, etc.)</p>
+                </div>
+              </div>
+
+              {/* Contact Info (for admin use - not displayed publicly) */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg text-secondary border-b pb-2">Your Contact Info</h3>
+                <p className="text-sm text-muted-foreground">This information will not be displayed publicly. It allows us to contact you if someone inquires about this profile.</p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email Address</Label>
+                    <Input id="email" type="email" data-testid="input-email" placeholder="your@email.com" {...form.register("email")} className="bg-muted/30" />
+                    {form.formState.errors.email && <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <Input id="phone" type="tel" data-testid="input-phone" placeholder="+1 (555) 123-4567" {...form.register("phone")} className="bg-muted/30" />
+                  </div>
                 </div>
               </div>
 
