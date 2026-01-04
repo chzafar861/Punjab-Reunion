@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { useProfiles } from "@/hooks/use-profiles";
 import { ProfileCard } from "@/components/ProfileCard";
 import { Button } from "@/components/ui/button";
+import heroCover from "@assets/generated_images/47dapunjab_heritage_cover_banner.png";
 
 export default function Home() {
   const [search, setSearch] = useState("");
@@ -26,10 +27,9 @@ export default function Home() {
       <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden">
         {/* Background Image with Overlay */}
         <div className="absolute inset-0 z-0">
-          {/* Unsplash image: Golden wheat fields */}
           <img 
-            src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=2232&auto=format&fit=crop"
-            alt="Rural Punjab Landscape - Golden Wheat Fields"
+            src={heroCover}
+            alt="Punjab Heritage - Golden Wheat Fields at Sunset"
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/30 to-background"></div>
