@@ -1,5 +1,7 @@
 import { useRoute } from "wouter";
+import { useEffect } from "react";
 import { useProfile } from "@/hooks/use-profiles";
+import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -34,6 +36,12 @@ export default function ProfileDetail() {
   const id = parseInt(params?.id || "0");
   const { data: profile, isLoading } = useProfile(id);
   const { toast } = useToast();
+  const { user, isAuthenticated } = useAuth();
+  
+  // Get display name from authenticated user
+  const displayName = user?.username || 
+    (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : user?.firstName) || 
+    "";
 
   useSEO({
     title: profile ? `${profile.fullName} from ${profile.villageName}` : "Profile Details",
@@ -76,13 +84,25 @@ export default function ProfileDetail() {
   const form = useForm<CommentFormData>({
     resolver: zodResolver(commentSchema),
     defaultValues: {
-      authorName: "",
+      authorName: displayName,
       content: "",
     }
   });
 
+  // Update authorName when user authentication state changes
+  useEffect(() => {
+    if (isAuthenticated && displayName) {
+      form.setValue("authorName", displayName);
+    }
+  }, [isAuthenticated, displayName, form]);
+
   const onSubmitComment = (data: CommentFormData) => {
-    createComment.mutate(data);
+    // Ensure authorName is set from authenticated user if available
+    const submitData = {
+      ...data,
+      authorName: isAuthenticated && displayName ? displayName : data.authorName,
+    };
+    createComment.mutate(submitData);
   };
 
   const handleShare = (platform: string) => {
@@ -220,19 +240,33 @@ export default function ProfileDetail() {
 
               {/* Comment Form */}
               <form onSubmit={form.handleSubmit(onSubmitComment)} className="space-y-4 mb-8 bg-background p-6 rounded-xl border border-border">
-                <div className="space-y-2">
-                  <Label htmlFor="authorName">Your Name <span className="text-destructive">*</span></Label>
-                  <Input 
-                    id="authorName" 
-                    data-testid="input-comment-author"
-                    placeholder="Enter your name"
-                    {...form.register("authorName")} 
-                    className="bg-muted/30"
-                  />
-                  {form.formState.errors.authorName && (
-                    <p className="text-sm text-destructive">{form.formState.errors.authorName.message}</p>
-                  )}
-                </div>
+                {isAuthenticated && displayName ? (
+                  <div className="flex items-center gap-3 pb-2 border-b border-border">
+                    <Avatar className="h-10 w-10">
+                      <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                        {displayName.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-semibold text-foreground">{displayName}</p>
+                      <p className="text-xs text-muted-foreground">Commenting as logged in user</p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <Label htmlFor="authorName">Your Name <span className="text-destructive">*</span></Label>
+                    <Input 
+                      id="authorName" 
+                      data-testid="input-comment-author"
+                      placeholder="Enter your name"
+                      {...form.register("authorName")} 
+                      className="bg-muted/30"
+                    />
+                    {form.formState.errors.authorName && (
+                      <p className="text-sm text-destructive">{form.formState.errors.authorName.message}</p>
+                    )}
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label htmlFor="content">Comment <span className="text-destructive">*</span></Label>
                   <Textarea 
