@@ -52,10 +52,10 @@ export default function SubmitProfile() {
         variant: "destructive",
       });
       setTimeout(() => {
-        window.location.href = "/api/login";
+        setLocation("/login");
       }, 500);
     }
-  }, [authLoading, isAuthenticated, toast]);
+  }, [authLoading, isAuthenticated, toast, setLocation]);
 
   // Show loading while checking auth
   if (authLoading) {

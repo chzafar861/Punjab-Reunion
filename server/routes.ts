@@ -5,6 +5,24 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { setupAuth, isAuthenticated, registerAuthRoutes } from "./replit_integrations/auth";
+import { registerCustomAuthRoutes, isCustomAuthenticated } from "./routes/customAuth";
+
+// Combined auth middleware - checks both Replit Auth and custom auth
+const isAuthenticatedCombined = async (req: any, res: any, next: any) => {
+  // First check custom session auth
+  const userId = req.session?.userId;
+  if (userId) {
+    const { getUserById } = await import("./services/auth");
+    const user = await getUserById(userId);
+    if (user) {
+      req.user = { claims: { sub: user.id }, ...user };
+      return next();
+    }
+  }
+  
+  // Fall back to Replit Auth
+  return isAuthenticated(req, res, next);
+};
 
 export async function registerRoutes(
   httpServer: Server,
@@ -14,6 +32,9 @@ export async function registerRoutes(
   // Setup authentication BEFORE other routes
   await setupAuth(app);
   registerAuthRoutes(app);
+  
+  // Register custom auth routes (email/password, Google)
+  registerCustomAuthRoutes(app);
   
   // Register object storage routes for file uploads
   registerObjectStorageRoutes(app);
@@ -59,7 +80,7 @@ export async function registerRoutes(
   });
 
   // Protected: Create profile (requires login)
-  app.post(api.profiles.create.path, isAuthenticated, async (req: any, res) => {
+  app.post(api.profiles.create.path, isAuthenticatedCombined, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub;
       const input = api.profiles.create.input.parse(req.body);
@@ -88,7 +109,7 @@ export async function registerRoutes(
   });
 
   // Protected: Get current user's profiles (includes private fields since it's their own data)
-  app.get("/api/my-profiles", isAuthenticated, async (req: any, res) => {
+  app.get("/api/my-profiles", isAuthenticatedCombined, async (req: any, res) => {
     const userId = req.user?.claims?.sub;
     const userProfiles = await storage.getProfilesByUserId(userId);
     // Return profiles with all fields since it's the user's own data
@@ -96,7 +117,7 @@ export async function registerRoutes(
   });
 
   // Protected: Update profile (only owner can update)
-  app.put("/api/profiles/:id", isAuthenticated, async (req: any, res) => {
+  app.put("/api/profiles/:id", isAuthenticatedCombined, async (req: any, res) => {
     try {
       const userId = req.user?.claims?.sub;
       const profileId = Number(req.params.id);
@@ -118,7 +139,7 @@ export async function registerRoutes(
   });
 
   // Protected: Delete profile (only owner can delete)
-  app.delete("/api/profiles/:id", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/profiles/:id", isAuthenticatedCombined, async (req: any, res) => {
     const userId = req.user?.claims?.sub;
     const profileId = Number(req.params.id);
     const deleted = await storage.deleteProfile(profileId, userId);

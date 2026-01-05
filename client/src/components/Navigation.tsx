@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Menu, X, Globe, User, LogOut } from "lucide-react";
+import { Menu, X, Globe, User, LogOut, FileText, PlusCircle } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,6 @@ export function Navigation() {
     { href: "/", label: "Home" },
     { href: "/directory", label: "Directory" },
     { href: "/tours", label: "Heritage Tours" },
-    { href: "/submit", label: "Submit Profile" },
     { href: "/contact", label: "Contact Us" },
   ];
 
@@ -56,40 +55,55 @@ export function Navigation() {
               </Link>
             ))}
             {isLoading ? null : isAuthenticated ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center gap-2" data-testid="button-user-menu">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={user?.profileImageUrl || undefined} />
-                      <AvatarFallback>
-                        <User className="h-4 w-4" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="hidden lg:inline text-sm">{user?.firstName || "Account"}</span>
+              <>
+                <Link href="/submit">
+                  <Button variant="default" size="sm" className="gap-1" data-testid="button-submit-profile">
+                    <PlusCircle className="h-4 w-4" />
+                    Submit Profile
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem asChild>
-                    <Link href="/my-profiles" className="cursor-pointer" data-testid="link-my-profiles">
-                      <User className="mr-2 h-4 w-4" />
-                      My Profiles
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <a href="/api/logout" className="cursor-pointer" data-testid="button-logout">
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Sign Out
-                    </a>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                </Link>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="flex items-center gap-2" data-testid="button-user-menu">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={user?.profileImageUrl || undefined} />
+                        <AvatarFallback>
+                          <User className="h-4 w-4" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="hidden lg:inline text-sm">{user?.username || user?.firstName || "Account"}</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                      <Link href="/my-profiles" className="cursor-pointer" data-testid="link-my-profiles">
+                        <FileText className="mr-2 h-4 w-4" />
+                        My Profiles
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <a href="/api/logout" className="cursor-pointer" data-testid="button-logout">
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Sign Out
+                      </a>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
             ) : (
-              <a href="/api/login">
-                <Button variant="outline" data-testid="button-login">
-                  Sign In
-                </Button>
-              </a>
+              <div className="flex items-center gap-2">
+                <Link href="/login">
+                  <Button variant="ghost" data-testid="button-login">
+                    Sign In
+                  </Button>
+                </Link>
+                <Link href="/signup">
+                  <Button variant="default" data-testid="button-signup">
+                    Sign Up
+                  </Button>
+                </Link>
+              </div>
             )}
           </nav>
 
@@ -127,16 +141,28 @@ export function Navigation() {
                 </Link>
               ))}
               {isAuthenticated && (
-                <Link 
-                  href="/my-profiles"
-                  className={`text-lg font-medium py-2 ${
-                    location === "/my-profiles" ? "text-primary" : "text-secondary"
-                  }`}
-                  onClick={() => setIsOpen(false)}
-                  data-testid="link-nav-mobile-my-profiles"
-                >
-                  My Profiles
-                </Link>
+                <>
+                  <Link 
+                    href="/submit"
+                    className={`text-lg font-medium py-2 ${
+                      location === "/submit" ? "text-primary" : "text-secondary"
+                    }`}
+                    onClick={() => setIsOpen(false)}
+                    data-testid="link-nav-mobile-submit"
+                  >
+                    Submit Profile
+                  </Link>
+                  <Link 
+                    href="/my-profiles"
+                    className={`text-lg font-medium py-2 ${
+                      location === "/my-profiles" ? "text-primary" : "text-secondary"
+                    }`}
+                    onClick={() => setIsOpen(false)}
+                    data-testid="link-nav-mobile-my-profiles"
+                  >
+                    My Profiles
+                  </Link>
+                </>
               )}
               <div className="pt-2 border-t border-border">
                 {isAuthenticated ? (
@@ -145,9 +171,24 @@ export function Navigation() {
                     Sign Out
                   </a>
                 ) : (
-                  <a href="/api/login" className="text-lg font-medium py-2 text-primary" data-testid="button-mobile-login">
-                    Sign In
-                  </a>
+                  <div className="flex flex-col gap-2">
+                    <Link 
+                      href="/login"
+                      className="text-lg font-medium py-2 text-primary"
+                      onClick={() => setIsOpen(false)}
+                      data-testid="button-mobile-login"
+                    >
+                      Sign In
+                    </Link>
+                    <Link 
+                      href="/signup"
+                      className="text-lg font-medium py-2 text-secondary"
+                      onClick={() => setIsOpen(false)}
+                      data-testid="button-mobile-signup"
+                    >
+                      Create Account
+                    </Link>
+                  </div>
                 )}
               </div>
             </div>

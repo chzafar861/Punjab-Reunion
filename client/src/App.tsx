@@ -17,6 +17,9 @@ import PunjabVillages from "@/pages/PunjabVillages";
 import LahoreHistory from "@/pages/LahoreHistory";
 import ModernCities from "@/pages/ModernCities";
 import MyProfiles from "@/pages/MyProfiles";
+import Login from "@/pages/Login";
+import Signup from "@/pages/Signup";
+import VerifyEmail from "@/pages/VerifyEmail";
 import NotFound from "@/pages/not-found";
 
 // Helper layout
@@ -44,6 +47,9 @@ function Router() {
         <Route path="/tours/modern-cities" component={ModernCities} />
         <Route path="/contact" component={Contact} />
         <Route path="/my-profiles" component={MyProfiles} />
+        <Route path="/login" component={Login} />
+        <Route path="/signup" component={Signup} />
+        <Route path="/verify-email" component={VerifyEmail} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
