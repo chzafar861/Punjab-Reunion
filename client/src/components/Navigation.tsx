@@ -71,7 +71,7 @@ export function Navigation() {
                           <User className="h-4 w-4" />
                         </AvatarFallback>
                       </Avatar>
-                      <span className="hidden lg:inline text-sm">{user?.username || user?.firstName || "Account"}</span>
+                      <span className="text-base font-semibold">{user?.username || user?.firstName || "Account"}</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">

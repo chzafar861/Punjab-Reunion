@@ -39,10 +39,10 @@ export default function MyProfiles() {
         variant: "destructive",
       });
       setTimeout(() => {
-        window.location.href = "/api/login";
+        setLocation("/login");
       }, 500);
     }
-  }, [authLoading, isAuthenticated, toast]);
+  }, [authLoading, isAuthenticated, toast, setLocation]);
 
   const { data: profiles, isLoading } = useQuery<Profile[]>({
     queryKey: ["/api/my-profiles"],
