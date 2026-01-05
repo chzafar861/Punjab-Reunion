@@ -67,6 +67,7 @@ export async function registerRoutes(
     }
     const publicProfile = {
       id: profile.id,
+      userId: profile.userId, // Include for ownership check
       fullName: profile.fullName,
       villageName: profile.villageName,
       district: profile.district,
@@ -196,11 +197,25 @@ export async function registerRoutes(
     res.json(comments);
   });
 
-  app.post("/api/profiles/:profileId/comments", async (req, res) => {
+  // Create comment - optionally authenticated (stores userId if logged in)
+  app.post("/api/profiles/:profileId/comments", async (req: any, res) => {
     try {
       const profileId = Number(req.params.profileId);
       const input = api.comments.create.input.parse({ ...req.body, profileId });
-      const comment = await storage.createProfileComment(input);
+      
+      // Check if user is authenticated (either custom or Replit auth)
+      let userId: string | undefined;
+      if (req.session?.userId) {
+        const { getUserById } = await import("./services/auth");
+        const user = await getUserById(req.session.userId);
+        if (user) {
+          userId = user.id;
+        }
+      } else if (req.user?.claims?.sub) {
+        userId = req.user.claims.sub;
+      }
+      
+      const comment = await storage.createProfileComment({ ...input, userId });
       res.status(201).json(comment);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -211,6 +226,38 @@ export async function registerRoutes(
       }
       throw err;
     }
+  });
+
+  // Protected: Update comment (only owner can update)
+  app.put("/api/comments/:id", isAuthenticatedCombined, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const commentId = Number(req.params.id);
+      const { content } = req.body;
+      
+      if (!content || typeof content !== 'string') {
+        return res.status(400).json({ message: "Content is required" });
+      }
+      
+      const updated = await storage.updateProfileComment(commentId, userId, content);
+      if (!updated) {
+        return res.status(403).json({ message: "Not authorized to update this comment" });
+      }
+      res.json(updated);
+    } catch (err) {
+      throw err;
+    }
+  });
+
+  // Protected: Delete comment (only owner can delete)
+  app.delete("/api/comments/:id", isAuthenticatedCombined, async (req: any, res) => {
+    const userId = req.user?.claims?.sub;
+    const commentId = Number(req.params.id);
+    const deleted = await storage.deleteProfileComment(commentId, userId);
+    if (!deleted) {
+      return res.status(403).json({ message: "Not authorized to delete this comment" });
+    }
+    res.json({ success: true });
   });
 
   // Seed data if empty (non-blocking)

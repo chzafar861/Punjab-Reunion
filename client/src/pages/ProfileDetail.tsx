@@ -1,5 +1,5 @@
-import { useRoute } from "wouter";
-import { useEffect } from "react";
+import { useRoute, useLocation } from "wouter";
+import { useEffect, useState } from "react";
 import { useProfile } from "@/hooks/use-profiles";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Loader2, MapPin, Calendar, Globe, Share2, MessageCircle, Send, Facebook, Twitter, Link as LinkIcon } from "lucide-react";
+import { Loader2, MapPin, Calendar, Globe, Share2, MessageCircle, Send, Facebook, Twitter, Link as LinkIcon, Edit2, Trash2, MoreVertical, X, Check } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -23,6 +23,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 const commentSchema = z.object({
   authorName: z.string().min(1, "Name is required"),
@@ -33,15 +43,25 @@ type CommentFormData = z.infer<typeof commentSchema>;
 
 export default function ProfileDetail() {
   const [, params] = useRoute("/profile/:id");
+  const [, setLocation] = useLocation();
   const id = parseInt(params?.id || "0");
   const { data: profile, isLoading } = useProfile(id);
   const { toast } = useToast();
   const { user, isAuthenticated } = useAuth();
   
+  // State for comment editing
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editingContent, setEditingContent] = useState("");
+  const [deleteCommentId, setDeleteCommentId] = useState<number | null>(null);
+  const [deleteProfileOpen, setDeleteProfileOpen] = useState(false);
+  
   // Get display name from authenticated user
   const displayName = user?.username || 
     (user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : user?.firstName) || 
     "";
+  
+  // Check if current user owns this profile
+  const isProfileOwner = isAuthenticated && user?.id && profile?.userId === user.id;
 
   useSEO({
     title: profile ? `${profile.fullName} from ${profile.villageName}` : "Profile Details",
@@ -71,6 +91,66 @@ export default function ProfileDetail() {
         description: "Your comment has been added.",
       });
       form.reset();
+    },
+    onError: (err: Error) => {
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  const updateComment = useMutation({
+    mutationFn: ({ commentId, content }: { commentId: number; content: string }) =>
+      apiRequest("PUT", `/api/comments/${commentId}`, { content }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/profiles', id, 'comments'] });
+      toast({
+        title: "Comment Updated",
+        description: "Your comment has been updated.",
+      });
+      setEditingCommentId(null);
+      setEditingContent("");
+    },
+    onError: (err: Error) => {
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  const deleteComment = useMutation({
+    mutationFn: (commentId: number) =>
+      apiRequest("DELETE", `/api/comments/${commentId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/profiles', id, 'comments'] });
+      toast({
+        title: "Comment Deleted",
+        description: "Your comment has been removed.",
+      });
+      setDeleteCommentId(null);
+    },
+    onError: (err: Error) => {
+      toast({
+        title: "Error",
+        description: err.message,
+        variant: "destructive",
+      });
+    }
+  });
+
+  const deleteProfile = useMutation({
+    mutationFn: () => apiRequest("DELETE", `/api/profiles/${id}`),
+    onSuccess: () => {
+      toast({
+        title: "Profile Deleted",
+        description: "Your profile has been removed.",
+      });
+      setDeleteProfileOpen(false);
+      setLocation("/directory");
     },
     onError: (err: Error) => {
       toast({
@@ -157,15 +237,38 @@ export default function ProfileDetail() {
           {/* Header with Details */}
           <div className="p-8 md:p-12 space-y-6">
             <div>
-              <div className="flex flex-wrap gap-2 mb-4">
-                 <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-bold uppercase rounded-full tracking-wider">
-                   {profile.district}
-                 </span>
-                 {profile.yearLeft && (
-                   <span className="px-3 py-1 bg-secondary/10 text-secondary text-xs font-bold uppercase rounded-full tracking-wider">
-                     Since {profile.yearLeft}
-                   </span>
-                 )}
+              <div className="flex flex-wrap items-start justify-between gap-4 mb-4">
+                <div className="flex flex-wrap gap-2">
+                  <span className="px-3 py-1 bg-primary/10 text-primary text-xs font-bold uppercase rounded-full tracking-wider">
+                    {profile.district}
+                  </span>
+                  {profile.yearLeft && (
+                    <span className="px-3 py-1 bg-secondary/10 text-secondary text-xs font-bold uppercase rounded-full tracking-wider">
+                      Since {profile.yearLeft}
+                    </span>
+                  )}
+                </div>
+                {isProfileOwner && (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setLocation(`/my-profiles?edit=${id}`)}
+                      data-testid="button-edit-profile"
+                    >
+                      <Edit2 className="w-4 h-4 mr-1" /> Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-destructive border-destructive hover:bg-destructive/10"
+                      onClick={() => setDeleteProfileOpen(true)}
+                      data-testid="button-delete-profile"
+                    >
+                      <Trash2 className="w-4 h-4 mr-1" /> Delete
+                    </Button>
+                  </div>
+                )}
               </div>
               <h1 className="font-serif text-4xl md:text-5xl font-bold text-secondary mb-2">
                 {profile.fullName}
@@ -310,34 +413,156 @@ export default function ProfileDetail() {
                 </p>
               ) : (
                 <div className="space-y-6">
-                  {comments.map((comment) => (
-                    <div key={comment.id} className="bg-background p-6 rounded-xl border border-border" data-testid={`comment-${comment.id}`}>
-                      <div className="flex items-start gap-4">
-                        <Avatar>
-                          <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-                            {comment.authorName.charAt(0).toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="font-semibold text-foreground">{comment.authorName}</span>
-                            {comment.createdAt && (
-                              <span className="text-xs text-muted-foreground">
-                                {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
-                              </span>
+                  {comments.map((comment) => {
+                    const isCommentOwner = isAuthenticated && user?.id && comment.userId === user.id;
+                    const isEditing = editingCommentId === comment.id;
+                    
+                    return (
+                      <div key={comment.id} className="bg-background p-6 rounded-xl border border-border" data-testid={`comment-${comment.id}`}>
+                        <div className="flex items-start gap-4">
+                          <Avatar>
+                            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+                              {comment.authorName.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between gap-2 mb-2">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-foreground">{comment.authorName}</span>
+                                {comment.createdAt && (
+                                  <span className="text-xs text-muted-foreground">
+                                    {formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true })}
+                                  </span>
+                                )}
+                              </div>
+                              {isCommentOwner && !isEditing && (
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8" data-testid={`button-comment-menu-${comment.id}`}>
+                                      <MoreVertical className="w-4 h-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem 
+                                      onClick={() => {
+                                        setEditingCommentId(comment.id);
+                                        setEditingContent(comment.content);
+                                      }}
+                                      data-testid={`button-edit-comment-${comment.id}`}
+                                    >
+                                      <Edit2 className="w-4 h-4 mr-2" /> Edit
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => setDeleteCommentId(comment.id)}
+                                      className="text-destructive focus:text-destructive"
+                                      data-testid={`button-delete-comment-${comment.id}`}
+                                    >
+                                      <Trash2 className="w-4 h-4 mr-2" /> Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              )}
+                            </div>
+                            {isEditing ? (
+                              <div className="space-y-3">
+                                <Textarea
+                                  value={editingContent}
+                                  onChange={(e) => setEditingContent(e.target.value)}
+                                  className="bg-muted/30 resize-y"
+                                  rows={3}
+                                  data-testid={`input-edit-comment-${comment.id}`}
+                                />
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    onClick={() => updateComment.mutate({ commentId: comment.id, content: editingContent })}
+                                    disabled={updateComment.isPending || !editingContent.trim()}
+                                    data-testid={`button-save-comment-${comment.id}`}
+                                  >
+                                    {updateComment.isPending ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                      <Check className="w-4 h-4 mr-1" />
+                                    )}
+                                    Save
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setEditingCommentId(null);
+                                      setEditingContent("");
+                                    }}
+                                    data-testid={`button-cancel-edit-${comment.id}`}
+                                  >
+                                    <X className="w-4 h-4 mr-1" /> Cancel
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-foreground/80 whitespace-pre-wrap">{comment.content}</p>
                             )}
                           </div>
-                          <p className="text-foreground/80 whitespace-pre-wrap">{comment.content}</p>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Delete Comment Confirmation Dialog */}
+      <AlertDialog open={deleteCommentId !== null} onOpenChange={(open) => !open && setDeleteCommentId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Comment</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this comment? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete-comment">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteCommentId && deleteComment.mutate(deleteCommentId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-confirm-delete-comment"
+            >
+              {deleteComment.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : null}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Profile Confirmation Dialog */}
+      <AlertDialog open={deleteProfileOpen} onOpenChange={setDeleteProfileOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Profile</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this heritage profile? This will permanently remove all the information and cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete-profile">Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteProfile.mutate()}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-testid="button-confirm-delete-profile"
+            >
+              {deleteProfile.isPending ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : null}
+              Delete Profile
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

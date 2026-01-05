@@ -12,7 +12,10 @@ export interface IStorage {
   createInquiry(inquiry: InsertInquiry): Promise<Inquiry>;
   createTourInquiry(tourInquiry: InsertTourInquiry): Promise<TourInquiry>;
   getProfileComments(profileId: number): Promise<ProfileComment[]>;
-  createProfileComment(comment: InsertProfileComment): Promise<ProfileComment>;
+  getProfileComment(id: number): Promise<ProfileComment | undefined>;
+  createProfileComment(comment: InsertProfileComment & { userId?: string }): Promise<ProfileComment>;
+  updateProfileComment(id: number, userId: string, content: string): Promise<ProfileComment | null>;
+  deleteProfileComment(id: number, userId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -94,9 +97,32 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(profileComments).where(eq(profileComments.profileId, profileId)).orderBy(desc(profileComments.createdAt));
   }
 
-  async createProfileComment(comment: InsertProfileComment): Promise<ProfileComment> {
+  async getProfileComment(id: number): Promise<ProfileComment | undefined> {
+    const [comment] = await db.select().from(profileComments).where(eq(profileComments.id, id));
+    return comment;
+  }
+
+  async createProfileComment(comment: InsertProfileComment & { userId?: string }): Promise<ProfileComment> {
     const [newComment] = await db.insert(profileComments).values(comment).returning();
     return newComment;
+  }
+
+  async updateProfileComment(id: number, userId: string, content: string): Promise<ProfileComment | null> {
+    const existing = await this.getProfileComment(id);
+    if (!existing || existing.userId !== userId) {
+      return null;
+    }
+    const [updated] = await db.update(profileComments).set({ content }).where(eq(profileComments.id, id)).returning();
+    return updated;
+  }
+
+  async deleteProfileComment(id: number, userId: string): Promise<boolean> {
+    const existing = await this.getProfileComment(id);
+    if (!existing || existing.userId !== userId) {
+      return false;
+    }
+    await db.delete(profileComments).where(eq(profileComments.id, id));
+    return true;
   }
 }
 

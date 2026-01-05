@@ -24,6 +24,7 @@ export const profiles = pgTable("profiles", {
 export const profileComments = pgTable("profile_comments", {
   id: serial("id").primaryKey(),
   profileId: integer("profile_id").notNull(),
+  userId: varchar("user_id"), // Owner of this comment (for edit/delete permissions)
   authorName: text("author_name").notNull(),
   content: text("content").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
