@@ -44,10 +44,10 @@ async function ensureTablesExist() {
         id SERIAL PRIMARY KEY,
         name TEXT NOT NULL,
         email TEXT NOT NULL,
-        phone TEXT,
-        tour_type TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        travel_dates TEXT,
         group_size INTEGER,
-        preferred_dates TEXT,
+        interest_areas TEXT NOT NULL,
         message TEXT,
         created_at TIMESTAMP DEFAULT NOW()
       );
