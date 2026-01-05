@@ -83,18 +83,22 @@ export async function registerRoutes(
   // === INQUIRIES ===
   app.post(api.inquiries.create.path, async (req, res) => {
     try {
+      console.log("Received inquiry request:", JSON.stringify(req.body));
       const input = api.inquiries.create.input.parse(req.body);
+      console.log("Parsed input:", JSON.stringify(input));
       const inquiry = await storage.createInquiry(input);
+      console.log("Inquiry saved successfully:", inquiry.id);
       res.status(201).json(inquiry);
-    } catch (err) {
-      console.error("Inquiry creation error:", err);
+    } catch (err: any) {
+      console.error("Inquiry creation error:", err?.message || err);
+      console.error("Error stack:", err?.stack);
       if (err instanceof z.ZodError) {
         return res.status(400).json({
           message: err.errors[0].message,
           field: err.errors[0].path.join('.'),
         });
       }
-      res.status(500).json({ message: "Failed to save inquiry. Please try again." });
+      res.status(500).json({ message: "Failed to save inquiry. Please try again.", error: err?.message });
     }
   });
 
