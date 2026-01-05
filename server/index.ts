@@ -2,8 +2,65 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { pool } from "./db";
 
 const app = express();
+
+async function ensureTablesExist() {
+  const client = await pool.connect();
+  try {
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS profiles (
+        id SERIAL PRIMARY KEY,
+        full_name TEXT NOT NULL,
+        village_name TEXT NOT NULL,
+        district TEXT NOT NULL,
+        year_left INTEGER,
+        current_location TEXT,
+        story TEXT NOT NULL,
+        photo_url TEXT,
+        email TEXT,
+        phone TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+      
+      CREATE TABLE IF NOT EXISTS inquiries (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL,
+        phone TEXT,
+        message TEXT NOT NULL,
+        profile_id INTEGER,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+      
+      CREATE TABLE IF NOT EXISTS tour_inquiries (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        email TEXT NOT NULL,
+        phone TEXT,
+        tour_type TEXT NOT NULL,
+        group_size INTEGER,
+        preferred_dates TEXT,
+        message TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+      
+      CREATE TABLE IF NOT EXISTS profile_comments (
+        id SERIAL PRIMARY KEY,
+        profile_id INTEGER NOT NULL,
+        author_name TEXT NOT NULL,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+    console.log("Database tables verified/created successfully");
+  } catch (err) {
+    console.error("Error creating tables:", err);
+  } finally {
+    client.release();
+  }
+}
 const httpServer = createServer(app);
 
 declare module "http" {
@@ -60,6 +117,9 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Ensure database tables exist (important for production)
+  await ensureTablesExist();
+  
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
