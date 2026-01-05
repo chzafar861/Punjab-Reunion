@@ -87,13 +87,14 @@ export async function registerRoutes(
       const inquiry = await storage.createInquiry(input);
       res.status(201).json(inquiry);
     } catch (err) {
+      console.error("Inquiry creation error:", err);
       if (err instanceof z.ZodError) {
         return res.status(400).json({
           message: err.errors[0].message,
           field: err.errors[0].path.join('.'),
         });
       }
-      throw err;
+      res.status(500).json({ message: "Failed to save inquiry. Please try again." });
     }
   });
 
@@ -104,13 +105,14 @@ export async function registerRoutes(
       const inquiry = await storage.createTourInquiry(input);
       res.status(201).json(inquiry);
     } catch (err) {
+      console.error("Tour inquiry creation error:", err);
       if (err instanceof z.ZodError) {
         return res.status(400).json({
           message: err.errors[0].message,
           field: err.errors[0].path.join('.'),
         });
       }
-      throw err;
+      res.status(500).json({ message: "Failed to save tour inquiry. Please try again." });
     }
   });
 
