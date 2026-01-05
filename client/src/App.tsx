@@ -16,6 +16,7 @@ import HeritageTours from "@/pages/HeritageTours";
 import PunjabVillages from "@/pages/PunjabVillages";
 import LahoreHistory from "@/pages/LahoreHistory";
 import ModernCities from "@/pages/ModernCities";
+import MyProfiles from "@/pages/MyProfiles";
 import NotFound from "@/pages/not-found";
 
 // Helper layout
@@ -42,6 +43,7 @@ function Router() {
         <Route path="/tours/lahore-history" component={LahoreHistory} />
         <Route path="/tours/modern-cities" component={ModernCities} />
         <Route path="/contact" component={Contact} />
+        <Route path="/my-profiles" component={MyProfiles} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

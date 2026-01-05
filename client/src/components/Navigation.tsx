@@ -1,12 +1,22 @@
 import { Link, useLocation } from "wouter";
-import { Menu, X, Globe } from "lucide-react";
+import { Menu, X, Globe, User, LogOut } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
   const [location] = useLocation();
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -45,11 +55,42 @@ export function Navigation() {
                 {link.label}
               </Link>
             ))}
-            <Link href="/submit">
-              <Button className="bg-primary hover:bg-primary/90 text-white font-semibold shadow-lg shadow-primary/25 rounded-full px-6">
-                Share a Story
-              </Button>
-            </Link>
+            {isLoading ? null : isAuthenticated ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2" data-testid="button-user-menu">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={user?.profileImageUrl || undefined} />
+                      <AvatarFallback>
+                        <User className="h-4 w-4" />
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="hidden lg:inline text-sm">{user?.firstName || "Account"}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild>
+                    <Link href="/my-profiles" className="cursor-pointer" data-testid="link-my-profiles">
+                      <User className="mr-2 h-4 w-4" />
+                      My Profiles
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <a href="/api/logout" className="cursor-pointer" data-testid="button-logout">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sign Out
+                    </a>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <a href="/api/login">
+                <Button variant="outline" data-testid="button-login">
+                  Sign In
+                </Button>
+              </a>
+            )}
           </nav>
 
           {/* Mobile Menu Button */}
@@ -85,6 +126,30 @@ export function Navigation() {
                   {link.label}
                 </Link>
               ))}
+              {isAuthenticated && (
+                <Link 
+                  href="/my-profiles"
+                  className={`text-lg font-medium py-2 ${
+                    location === "/my-profiles" ? "text-primary" : "text-secondary"
+                  }`}
+                  onClick={() => setIsOpen(false)}
+                  data-testid="link-nav-mobile-my-profiles"
+                >
+                  My Profiles
+                </Link>
+              )}
+              <div className="pt-2 border-t border-border">
+                {isAuthenticated ? (
+                  <a href="/api/logout" className="text-lg font-medium py-2 text-secondary flex items-center gap-2" data-testid="button-mobile-logout">
+                    <LogOut className="h-5 w-5" />
+                    Sign Out
+                  </a>
+                ) : (
+                  <a href="/api/login" className="text-lg font-medium py-2 text-primary" data-testid="button-mobile-login">
+                    Sign In
+                  </a>
+                )}
+              </div>
             </div>
           </motion.div>
         )}

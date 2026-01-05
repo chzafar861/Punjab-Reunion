@@ -5,7 +5,10 @@ import { eq, ilike, or, desc } from "drizzle-orm";
 export interface IStorage {
   getProfiles(search?: string, district?: string): Promise<Profile[]>;
   getProfile(id: number): Promise<Profile | undefined>;
-  createProfile(profile: InsertProfile): Promise<Profile>;
+  getProfilesByUserId(userId: string): Promise<Profile[]>;
+  createProfile(profile: InsertProfile & { userId?: string }): Promise<Profile>;
+  updateProfile(id: number, userId: string, profile: Partial<InsertProfile>): Promise<Profile | null>;
+  deleteProfile(id: number, userId: string): Promise<boolean>;
   createInquiry(inquiry: InsertInquiry): Promise<Inquiry>;
   createTourInquiry(tourInquiry: InsertTourInquiry): Promise<TourInquiry>;
   getProfileComments(profileId: number): Promise<ProfileComment[]>;
@@ -42,9 +45,39 @@ export class DatabaseStorage implements IStorage {
     return profile;
   }
 
-  async createProfile(insertProfile: InsertProfile): Promise<Profile> {
+  async getProfilesByUserId(userId: string): Promise<Profile[]> {
+    return await db.select().from(profiles).where(eq(profiles.userId, userId)).orderBy(desc(profiles.createdAt));
+  }
+
+  async createProfile(insertProfile: InsertProfile & { userId?: string }): Promise<Profile> {
     const [profile] = await db.insert(profiles).values(insertProfile).returning();
     return profile;
+  }
+
+  async updateProfile(id: number, userId: string, updateData: Partial<InsertProfile>): Promise<Profile | null> {
+    const existing = await this.getProfile(id);
+    if (!existing || existing.userId !== userId) {
+      return null;
+    }
+    // Filter out undefined values and prevent userId mutation
+    const { userId: _, ...rest } = updateData as any;
+    const cleanedData: Record<string, any> = {};
+    for (const [key, value] of Object.entries(rest)) {
+      if (value !== undefined) {
+        cleanedData[key] = value;
+      }
+    }
+    const [updated] = await db.update(profiles).set(cleanedData).where(eq(profiles.id, id)).returning();
+    return updated;
+  }
+
+  async deleteProfile(id: number, userId: string): Promise<boolean> {
+    const existing = await this.getProfile(id);
+    if (!existing || existing.userId !== userId) {
+      return false;
+    }
+    await db.delete(profiles).where(eq(profiles.id, id));
+    return true;
   }
 
   async createInquiry(insertInquiry: InsertInquiry): Promise<Inquiry> {

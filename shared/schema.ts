@@ -1,10 +1,14 @@
-import { pgTable, text, serial, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+// Re-export auth models
+export * from "./models/auth";
 
 // === TABLE DEFINITIONS ===
 export const profiles = pgTable("profiles", {
   id: serial("id").primaryKey(),
+  userId: varchar("user_id"), // Owner of this profile (links to users table)
   fullName: text("full_name").notNull(),
   villageName: text("village_name").notNull(),
   district: text("district").notNull(),

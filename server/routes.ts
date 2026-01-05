@@ -4,11 +4,16 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
+import { setupAuth, isAuthenticated, registerAuthRoutes } from "./replit_integrations/auth";
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  
+  // Setup authentication BEFORE other routes
+  await setupAuth(app);
+  registerAuthRoutes(app);
   
   // Register object storage routes for file uploads
   registerObjectStorageRoutes(app);
@@ -53,10 +58,12 @@ export async function registerRoutes(
     res.json(publicProfile);
   });
 
-  app.post(api.profiles.create.path, async (req, res) => {
+  // Protected: Create profile (requires login)
+  app.post(api.profiles.create.path, isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user?.claims?.sub;
       const input = api.profiles.create.input.parse(req.body);
-      const profile = await storage.createProfile(input);
+      const profile = await storage.createProfile({ ...input, userId });
       const publicProfile = {
         id: profile.id,
         fullName: profile.fullName,
@@ -78,6 +85,47 @@ export async function registerRoutes(
       }
       throw err;
     }
+  });
+
+  // Protected: Get current user's profiles (includes private fields since it's their own data)
+  app.get("/api/my-profiles", isAuthenticated, async (req: any, res) => {
+    const userId = req.user?.claims?.sub;
+    const userProfiles = await storage.getProfilesByUserId(userId);
+    // Return profiles with all fields since it's the user's own data
+    res.json(userProfiles);
+  });
+
+  // Protected: Update profile (only owner can update)
+  app.put("/api/profiles/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const profileId = Number(req.params.id);
+      const input = api.profiles.create.input.partial().parse(req.body);
+      const updated = await storage.updateProfile(profileId, userId, input);
+      if (!updated) {
+        return res.status(403).json({ message: "Not authorized to update this profile" });
+      }
+      res.json(updated);
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({
+          message: err.errors[0].message,
+          field: err.errors[0].path.join('.'),
+        });
+      }
+      throw err;
+    }
+  });
+
+  // Protected: Delete profile (only owner can delete)
+  app.delete("/api/profiles/:id", isAuthenticated, async (req: any, res) => {
+    const userId = req.user?.claims?.sub;
+    const profileId = Number(req.params.id);
+    const deleted = await storage.deleteProfile(profileId, userId);
+    if (!deleted) {
+      return res.status(403).json({ message: "Not authorized to delete this profile" });
+    }
+    res.json({ success: true });
   });
 
   // === INQUIRIES ===

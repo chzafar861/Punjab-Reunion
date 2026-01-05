@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Loader2, UploadCloud, CheckCircle, Image } from "lucide-react";
 import { useUpload } from "@/hooks/use-upload";
 import { useSEO } from "@/hooks/use-seo";
+import { useAuth } from "@/hooks/use-auth";
 
 // Form validation schema - all fields required except yearLeft, email, phone
 const profileFormSchema = z.object({
@@ -40,6 +41,39 @@ export default function SubmitProfile() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const createProfile = useCreateProfile();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      toast({
+        title: "Sign In Required",
+        description: "Please sign in to submit a profile.",
+        variant: "destructive",
+      });
+      setTimeout(() => {
+        window.location.href = "/api/login";
+      }, 500);
+    }
+  }, [authLoading, isAuthenticated, toast]);
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  // Don't render form if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Redirecting to sign in...</p>
+      </div>
+    );
+  }
   const [uploadedFileName, setUploadedFileName] = useState<string>("");
   const { uploadFile, isUploading } = useUpload({
     onSuccess: (response) => {
