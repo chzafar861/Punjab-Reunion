@@ -13,6 +13,10 @@ import {
   Heart
 } from "lucide-react";
 
+import ruralVillageImg from "@assets/Rural_Punjab_Village_1767631924193.jpg";
+import agriculturalFieldsImg from "@assets/Agricultural_Fields_1767631924193.jpg";
+import villageLifeImg from "@assets/Village_Life_1767631924193.jpg";
+
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
   whileInView: { opacity: 1, y: 0 },
@@ -22,25 +26,25 @@ const fadeIn = {
 const villages = [
   {
     name: "Lyallpur (Faisalabad)",
-    image: "https://images.unsplash.com/photo-1587474260584-136574528ed5?q=80&w=2070",
+    image: ruralVillageImg,
     description: "Once known as Lyallpur, this city was the heart of Punjab's agricultural belt. Many Sikh and Hindu families had their roots here before 1947.",
     features: ["Canal Colony Architecture", "Agricultural Heritage", "Historical Markets"],
   },
   {
     name: "Rawalpindi",
-    image: "https://images.unsplash.com/photo-1623850606806-15c65efcdb1b?q=80&w=2070",
+    image: agriculturalFieldsImg,
     description: "A twin city of Islamabad, Rawalpindi has deep historical roots. Many families trace their ancestry to the bustling bazaars and neighborhoods here.",
     features: ["Raja Bazaar", "British Era Buildings", "Military Cantonment"],
   },
   {
     name: "Sialkot",
-    image: "https://images.unsplash.com/photo-1567157577867-05ccb1388e66?q=80&w=2074",
+    image: villageLifeImg,
     description: "Known for its craftsmanship, Sialkot was home to many artisan families. The region is famous for sports goods and surgical instruments.",
     features: ["Artisan Heritage", "Iqbal's Birthplace", "Historic Temples"],
   },
   {
     name: "Gujranwala",
-    image: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2070",
+    image: ruralVillageImg,
     description: "The birthplace of Maharaja Ranjit Singh, Gujranwala holds immense historical significance for Punjabi culture and Sikh history.",
     features: ["Ranjit Singh Memorial", "Traditional Bazaars", "Agricultural Lands"],
   },
@@ -54,7 +58,7 @@ const articles = [
 Each village had its own character. Some were known for their fertile lands fed by the five rivers, others for their skilled craftsmen. The chaupal (village square) was where elders would gather, disputes were settled, and stories of ancestors were shared with younger generations.
 
 The harvest season brought everyone together. Baisakhi celebrations saw the entire village dancing bhangra, sharing food, and celebrating the bounty of the land. These traditions, though now divided by borders, remain alive in the hearts of those who trace their roots to these villages.`,
-    image: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?q=80&w=2070",
+    image: villageLifeImg,
   },
   {
     title: "The Agricultural Legacy of Punjab",
@@ -63,7 +67,7 @@ The harvest season brought everyone together. Baisakhi celebrations saw the enti
 Families who left during partition often speak of their ancestral lands with deep emotion. The golden wheat fields, the mango orchards, the sugarcane farms - these weren't just sources of livelihood but repositories of family memories spanning generations.
 
 Today, we help families reconnect with these lands. Whether it's visiting the site of an old family farm, meeting with current residents who may have known your ancestors, or simply walking the same paths your grandparents once walked - these experiences bring closure and connection.`,
-    image: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=2070",
+    image: agriculturalFieldsImg,
   },
   {
     title: "Finding Your Ancestral Home",
@@ -72,7 +76,7 @@ Today, we help families reconnect with these lands. Whether it's visiting the si
 Our team works with local historians, village elders, and land records to trace these properties. Sometimes the original structures still stand, albeit with modifications. Other times, we find the plot of land where the home once stood, now occupied by new buildings.
 
 The emotional journey of standing where your ancestors once lived cannot be described in words. We've witnessed reunions between families separated for decades, discovered photographs in old albums held by current residents, and helped piece together stories that were thought to be lost forever.`,
-    image: "https://images.unsplash.com/photo-1582719508461-905c673771fd?q=80&w=2025",
+    image: ruralVillageImg,
   },
 ];
 
@@ -89,7 +93,7 @@ export default function PunjabVillages() {
       <section className="relative min-h-[60vh] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img
-            src="https://images.unsplash.com/photo-1587474260584-136574528ed5?q=80&w=2070"
+            src={ruralVillageImg}
             alt="Punjab Village"
             className="w-full h-full object-cover"
           />

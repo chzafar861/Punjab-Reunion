@@ -27,6 +27,14 @@ import {
   Landmark
 } from "lucide-react";
 
+import ruralVillageImg from "@assets/Rural_Punjab_Village_1767631924193.jpg";
+import agriculturalFieldsImg from "@assets/Agricultural_Fields_1767631924193.jpg";
+import villageLifeImg from "@assets/Village_Life_1767631924193.jpg";
+import badshahiMosqueImg from "@assets/Badshahi_Mosque_1767631924193.jpg";
+import modernLahoreImg from "@assets/Modern_Lahore_1767631924193.jpg";
+import urbanDevelopmentImg from "@assets/Urban_Development_1767631924193.jpg";
+import fiveRiversMapImg from "@assets/The_Land_of_Five_Rivers_1767631924193.jpg";
+
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
   whileInView: { opacity: 1, y: 0 },
@@ -35,17 +43,17 @@ const fadeIn = {
 
 const villageImages = [
   {
-    url: "https://images.unsplash.com/photo-1587474260584-136574528ed5?q=80&w=2070",
+    url: ruralVillageImg,
     title: "Rural Punjab Village",
     desc: "Traditional brick homes and peaceful lanes",
   },
   {
-    url: "https://images.unsplash.com/photo-1623850606806-15c65efcdb1b?q=80&w=2070",
+    url: agriculturalFieldsImg,
     title: "Agricultural Fields",
     desc: "Golden wheat fields of Punjab",
   },
   {
-    url: "https://images.unsplash.com/photo-1567157577867-05ccb1388e66?q=80&w=2074",
+    url: villageLifeImg,
     title: "Village Life",
     desc: "Simple, beautiful rural living",
   },
@@ -53,25 +61,25 @@ const villageImages = [
 
 const lahoreImages = [
   {
-    url: "https://images.unsplash.com/photo-1567157577867-05ccb1388e66?q=80&w=2074",
+    url: badshahiMosqueImg,
     title: "Badshahi Mosque",
     desc: "Historic Mughal-era masterpiece",
     era: "Historic",
   },
   {
-    url: "https://images.unsplash.com/photo-1570168007204-dfb528c6958f?q=80&w=2069",
+    url: badshahiMosqueImg,
     title: "Lahore Fort",
     desc: "UNESCO World Heritage Site",
     era: "Historic",
   },
   {
-    url: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?q=80&w=2070",
+    url: modernLahoreImg,
     title: "Modern Lahore",
     desc: "Contemporary city skyline",
     era: "Modern",
   },
   {
-    url: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=2070",
+    url: urbanDevelopmentImg,
     title: "Urban Development",
     desc: "New architectural marvels",
     era: "Modern",
@@ -80,17 +88,17 @@ const lahoreImages = [
 
 const historicalImages = [
   {
-    url: "https://images.unsplash.com/photo-1582719508461-905c673771fd?q=80&w=2025",
+    url: ruralVillageImg,
     title: "1947 Partition Era",
     desc: "Historic moments captured",
   },
   {
-    url: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?q=80&w=2070",
+    url: villageLifeImg,
     title: "Ancient Streets",
     desc: "Historic pathways of Punjab",
   },
   {
-    url: "https://images.unsplash.com/photo-1599661046289-e31897846e41?q=80&w=2070",
+    url: badshahiMosqueImg,
     title: "Heritage Architecture",
     desc: "Colonial and Mughal influences",
   },
@@ -146,7 +154,7 @@ export default function HeritageTours() {
       <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img
-            src="https://images.unsplash.com/photo-1567157577867-05ccb1388e66?q=80&w=2074"
+            src={badshahiMosqueImg}
             alt="Badshahi Mosque Lahore"
             className="w-full h-full object-cover"
           />
@@ -413,7 +421,7 @@ export default function HeritageTours() {
             <Card className="overflow-hidden">
               <div className="aspect-[16/9] md:aspect-[21/9] relative">
                 <img
-                  src="https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=2074"
+                  src={fiveRiversMapImg}
                   alt="Map of Punjab Region"
                   className="w-full h-full object-cover"
                 />
@@ -456,7 +464,7 @@ export default function HeritageTours() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
             <motion.div {...fadeIn} className="relative aspect-[4/3] rounded-xl overflow-hidden">
               <img
-                src="https://images.unsplash.com/photo-1449824913935-59a10b8d2000?q=80&w=2070"
+                src={modernLahoreImg}
                 alt="Modern Lahore City"
                 className="w-full h-full object-cover"
               />
@@ -468,7 +476,7 @@ export default function HeritageTours() {
             </motion.div>
             <motion.div {...fadeIn} transition={{ delay: 0.1 }} className="relative aspect-[4/3] rounded-xl overflow-hidden">
               <img
-                src="https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?q=80&w=2070"
+                src={urbanDevelopmentImg}
                 alt="Pakistan Urban Development"
                 className="w-full h-full object-cover"
               />
