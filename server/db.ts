@@ -4,21 +4,21 @@ import * as schema from "@shared/schema";
 
 const { Pool } = pg;
 
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
+const databaseUrl = process.env.DATABASE_URL;
+
+if (!databaseUrl) {
+  console.error("DATABASE_URL is not set. Database features will not work.");
 }
 
 export const pool = new Pool({ 
-  connectionString: process.env.DATABASE_URL,
+  connectionString: databaseUrl || "postgresql://localhost:5432/placeholder",
   connectionTimeoutMillis: 10000,
   idleTimeoutMillis: 30000,
   max: 10,
 });
 
 pool.on('error', (err) => {
-  console.error('Unexpected error on idle client', err);
+  console.error('Database pool error:', err);
 });
 
 export const db = drizzle(pool, { schema });

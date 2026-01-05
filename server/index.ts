@@ -7,8 +7,14 @@ import { pool } from "./db";
 const app = express();
 
 async function ensureTablesExist() {
-  const client = await pool.connect();
+  if (!process.env.DATABASE_URL) {
+    console.warn("DATABASE_URL not set, skipping table creation");
+    return;
+  }
+  
+  let client;
   try {
+    client = await pool.connect();
     await client.query(`
       CREATE TABLE IF NOT EXISTS profiles (
         id SERIAL PRIMARY KEY,
@@ -58,7 +64,7 @@ async function ensureTablesExist() {
   } catch (err) {
     console.error("Error creating tables:", err);
   } finally {
-    client.release();
+    if (client) client.release();
   }
 }
 const httpServer = createServer(app);
