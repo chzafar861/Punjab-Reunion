@@ -12,11 +12,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { 
-  Video, 
-  Package, 
-  MapPin, 
-  Camera, 
+import {
+  Video,
+  Package,
+  MapPin,
+  Camera,
   ArrowRight,
   Clock,
   DollarSign,
@@ -24,7 +24,7 @@ import {
   Send,
   Building2,
   TreeDeciduous,
-  Landmark
+  Landmark,
 } from "lucide-react";
 
 const fadeIn = {
@@ -35,17 +35,17 @@ const fadeIn = {
 
 const villageImages = [
   {
-    url: "https://images.unsplash.com/photo-1587474260584-136574528ed5?q=80&w=2070",
+    url: "https://images.unsplash.com/photo-1760740516377-264362f7ba57?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NzJ8fFJ1cmFsJTIwUHVuamFiJTIwVmlsbGFnZXxlbnwwfHwwfHx8MA%3D%3D",
     title: "Rural Punjab Village",
     desc: "Traditional brick homes and peaceful lanes",
   },
   {
-    url: "https://images.unsplash.com/photo-1623850606806-15c65efcdb1b?q=80&w=2070",
+    url: "https://images.unsplash.com/photo-1694093817187-0c913bc4ad87?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8QWdyaWN1bHR1cmFsJTIwRmllbGRzfGVufDB8fDB8fHww",
     title: "Agricultural Fields",
     desc: "Golden wheat fields of Punjab",
   },
   {
-    url: "https://images.unsplash.com/photo-1567157577867-05ccb1388e66?q=80&w=2074",
+    url: "https://images.unsplash.com/photo-1562658601-0ae4a690ae1f?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8VmlsbGFnZSUyMExpZmV8ZW58MHx8MHx8fDA%3D",
     title: "Village Life",
     desc: "Simple, beautiful rural living",
   },
@@ -53,13 +53,13 @@ const villageImages = [
 
 const lahoreImages = [
   {
-    url: "https://images.unsplash.com/photo-1567157577867-05ccb1388e66?q=80&w=2074",
+    url: "https://images.unsplash.com/photo-1707882791939-b929784ebddf?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTl8fEJhZHNoYWhpJTIwTW9zcXVlfGVufDB8fDB8fHww",
     title: "Badshahi Mosque",
     desc: "Historic Mughal-era masterpiece",
     era: "Historic",
   },
   {
-    url: "https://images.unsplash.com/photo-1570168007204-dfb528c6958f?q=80&w=2069",
+    url: "https://images.unsplash.com/photo-1669551671277-f9cbdd107288?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8TGFob3JlJTIwRm9ydHxlbnwwfHwwfHx8MA%3D%3D",
     title: "Lahore Fort",
     desc: "UNESCO World Heritage Site",
     era: "Historic",
@@ -80,12 +80,12 @@ const lahoreImages = [
 
 const historicalImages = [
   {
-    url: "https://images.unsplash.com/photo-1582719508461-905c673771fd?q=80&w=2025",
+    url: "https://plus.unsplash.com/premium_photo-1669387727429-0a444196038d?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8MTk0NyUyMFBhcnRpdGlvbiUyMEVyYSUyMHBhayUyMGluZGlhfGVufDB8fDB8fHww",
     title: "1947 Partition Era",
     desc: "Historic moments captured",
   },
   {
-    url: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?q=80&w=2070",
+    url: "https://media.istockphoto.com/id/2244623300/photo/rohtas-fort-sohail-gate-historic-mughal-stronghold-view.jpg?s=612x612&w=0&k=20&c=awd2e2OTDK_iUyfPnvusfDyw_8M8RmYmZo7WCtKz7dU=",
     title: "Ancient Streets",
     desc: "Historic pathways of Punjab",
   },
@@ -99,8 +99,10 @@ const historicalImages = [
 export default function HeritageTours() {
   useSEO({
     title: "Heritage Tours & Services",
-    description: "Experience Punjab heritage through virtual home visits, guided tours, and heritage import services. Book $100 video calls to see your ancestral village, or order authentic soil and handicrafts from your family's homeland.",
-    keywords: "Punjab heritage tour, virtual home visit, ancestral village video call, heritage import, Punjab soil, handicrafts Pakistan, Lahore tour, village visit",
+    description:
+      "Experience Punjab heritage through virtual home visits, guided tours, and heritage import services. Book $100 video calls to see your ancestral village, or order authentic soil and handicrafts from your family's homeland.",
+    keywords:
+      "Punjab heritage tour, virtual home visit, ancestral village video call, heritage import, Punjab soil, handicrafts Pakistan, Lahore tour, village visit",
     canonicalPath: "/tours",
   });
 
@@ -167,15 +169,20 @@ export default function HeritageTours() {
             </h1>
 
             <p className="text-xl md:text-2xl text-white/90 max-w-2xl mx-auto font-light leading-relaxed">
-              Let us take you on a journey through Punjab, Pakistan. Visit your ancestral village, 
-              explore historic Lahore, and reconnect with your heritage.
+              Let us take you on a journey through Punjab, Pakistan. Visit your
+              ancestral village, explore historic Lahore, and reconnect with
+              your heritage.
             </p>
 
             <div className="flex flex-wrap justify-center gap-4 mt-8">
               <Button
                 size="lg"
                 className="bg-primary text-white rounded-full shadow-xl"
-                onClick={() => document.getElementById("services")?.scrollIntoView({ behavior: "smooth" })}
+                onClick={() =>
+                  document
+                    .getElementById("services")
+                    ?.scrollIntoView({ behavior: "smooth" })
+                }
                 data-testid="button-explore-services"
               >
                 Explore Services <ArrowRight className="ml-2 w-5 h-5" />
@@ -184,7 +191,11 @@ export default function HeritageTours() {
                 size="lg"
                 variant="outline"
                 className="rounded-full bg-white/10 backdrop-blur-md border-white/30 text-white"
-                onClick={() => document.getElementById("gallery")?.scrollIntoView({ behavior: "smooth" })}
+                onClick={() =>
+                  document
+                    .getElementById("gallery")
+                    ?.scrollIntoView({ behavior: "smooth" })
+                }
                 data-testid="button-view-gallery"
               >
                 View Gallery
@@ -220,13 +231,16 @@ export default function HeritageTours() {
                   <div className="flex items-center gap-2 text-primary font-bold text-3xl">
                     <DollarSign className="w-6 h-6" />
                     <span>100</span>
-                    <span className="text-base text-muted-foreground font-normal">USD only</span>
+                    <span className="text-base text-muted-foreground font-normal">
+                      USD only
+                    </span>
                   </div>
                 </div>
                 <CardContent className="p-8 space-y-4">
                   <p className="text-muted-foreground leading-relaxed">
-                    Want to see your ancestral home, village, or neighborhood in Pakistan? 
-                    We will visit the location and show you everything through a live video call.
+                    Want to see your ancestral home, village, or neighborhood in
+                    Pakistan? We will visit the location and show you everything
+                    through a live video call.
                   </p>
                   <ul className="space-y-3">
                     {[
@@ -256,12 +270,14 @@ export default function HeritageTours() {
                   <h3 className="font-serif text-2xl font-bold text-secondary mb-2">
                     Heritage Imports
                   </h3>
-                  <p className="text-muted-foreground">Custom pricing based on request</p>
+                  <p className="text-muted-foreground">
+                    Custom pricing based on request
+                  </p>
                 </div>
                 <CardContent className="p-8 space-y-4">
                   <p className="text-muted-foreground leading-relaxed">
-                    Want to bring a piece of your homeland with you? We can help you import 
-                    meaningful items from Punjab, Pakistan.
+                    Want to bring a piece of your homeland with you? We can help
+                    you import meaningful items from Punjab, Pakistan.
                   </p>
                   <ul className="space-y-3">
                     {[
@@ -292,16 +308,22 @@ export default function HeritageTours() {
               Explore Pakistan
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Discover the beauty of Punjab - from peaceful villages to the grandeur of Lahore
+              Discover the beauty of Punjab - from peaceful villages to the
+              grandeur of Lahore
             </p>
           </motion.div>
 
           {/* Villages */}
           <div className="mb-16">
-            <motion.div {...fadeIn} className="flex items-center justify-between gap-3 mb-8">
+            <motion.div
+              {...fadeIn}
+              className="flex items-center justify-between gap-3 mb-8"
+            >
               <div className="flex items-center gap-3">
                 <TreeDeciduous className="w-8 h-8 text-primary" />
-                <h3 className="font-serif text-3xl font-bold text-secondary">Punjab Villages</h3>
+                <h3 className="font-serif text-3xl font-bold text-secondary">
+                  Punjab Villages
+                </h3>
               </div>
               <Link href="/tours/villages">
                 <Button variant="outline" data-testid="link-explore-villages">
@@ -324,7 +346,9 @@ export default function HeritageTours() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-6">
-                    <h4 className="font-serif text-xl font-bold text-white">{img.title}</h4>
+                    <h4 className="font-serif text-xl font-bold text-white">
+                      {img.title}
+                    </h4>
                     <p className="text-white/80 text-sm">{img.desc}</p>
                   </div>
                 </motion.div>
@@ -334,10 +358,15 @@ export default function HeritageTours() {
 
           {/* Lahore */}
           <div className="mb-16">
-            <motion.div {...fadeIn} className="flex items-center justify-between gap-3 mb-8">
+            <motion.div
+              {...fadeIn}
+              className="flex items-center justify-between gap-3 mb-8"
+            >
               <div className="flex items-center gap-3">
                 <Landmark className="w-8 h-8 text-primary" />
-                <h3 className="font-serif text-3xl font-bold text-secondary">Lahore - Historic & Modern</h3>
+                <h3 className="font-serif text-3xl font-bold text-secondary">
+                  Lahore - Historic & Modern
+                </h3>
               </div>
               <Link href="/tours/lahore-history">
                 <Button variant="outline" data-testid="link-explore-lahore">
@@ -360,14 +389,20 @@ export default function HeritageTours() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                   <div className="absolute top-4 right-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                      img.era === "Historic" ? "bg-amber-500 text-white" : "bg-blue-500 text-white"
-                    }`}>
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                        img.era === "Historic"
+                          ? "bg-amber-500 text-white"
+                          : "bg-blue-500 text-white"
+                      }`}
+                    >
                       {img.era}
                     </span>
                   </div>
                   <div className="absolute bottom-0 left-0 right-0 p-6">
-                    <h4 className="font-serif text-xl font-bold text-white">{img.title}</h4>
+                    <h4 className="font-serif text-xl font-bold text-white">
+                      {img.title}
+                    </h4>
                     <p className="text-white/80 text-sm">{img.desc}</p>
                   </div>
                 </motion.div>
@@ -379,7 +414,9 @@ export default function HeritageTours() {
           <div className="mb-16">
             <motion.div {...fadeIn} className="flex items-center gap-3 mb-8">
               <Clock className="w-8 h-8 text-primary" />
-              <h3 className="font-serif text-3xl font-bold text-secondary">Historical Punjab (1947 Era)</h3>
+              <h3 className="font-serif text-3xl font-bold text-secondary">
+                Historical Punjab (1947 Era)
+              </h3>
             </motion.div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {historicalImages.map((img, i) => (
@@ -396,7 +433,9 @@ export default function HeritageTours() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-6">
-                    <h4 className="font-serif text-xl font-bold text-white">{img.title}</h4>
+                    <h4 className="font-serif text-xl font-bold text-white">
+                      {img.title}
+                    </h4>
                     <p className="text-white/80 text-sm">{img.desc}</p>
                   </div>
                 </motion.div>
@@ -408,7 +447,9 @@ export default function HeritageTours() {
           <motion.div {...fadeIn} className="mt-16">
             <div className="flex items-center gap-3 mb-8">
               <MapPin className="w-8 h-8 text-primary" />
-              <h3 className="font-serif text-3xl font-bold text-secondary">Punjab Region Map</h3>
+              <h3 className="font-serif text-3xl font-bold text-secondary">
+                Punjab Region Map
+              </h3>
             </div>
             <Card className="overflow-hidden">
               <div className="aspect-[16/9] md:aspect-[21/9] relative">
@@ -423,8 +464,9 @@ export default function HeritageTours() {
                     The Land of Five Rivers
                   </h4>
                   <p className="text-white/90 text-lg leading-relaxed">
-                    Punjab, meaning "Land of Five Rivers," spans across India and Pakistan. 
-                    Let us help you trace your roots across this historic region.
+                    Punjab, meaning "Land of Five Rivers," spans across India
+                    and Pakistan. Let us help you trace your roots across this
+                    historic region.
                   </p>
                 </div>
               </div>
@@ -454,7 +496,10 @@ export default function HeritageTours() {
           </motion.div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
-            <motion.div {...fadeIn} className="relative aspect-[4/3] rounded-xl overflow-hidden">
+            <motion.div
+              {...fadeIn}
+              className="relative aspect-[4/3] rounded-xl overflow-hidden"
+            >
               <img
                 src="https://images.unsplash.com/photo-1449824913935-59a10b8d2000?q=80&w=2070"
                 alt="Modern Lahore City"
@@ -462,11 +507,19 @@ export default function HeritageTours() {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
               <div className="absolute bottom-6 left-6">
-                <h4 className="font-serif text-2xl font-bold text-white">Lahore Today</h4>
-                <p className="text-white/80">A blend of tradition and modernity</p>
+                <h4 className="font-serif text-2xl font-bold text-white">
+                  Lahore Today
+                </h4>
+                <p className="text-white/80">
+                  A blend of tradition and modernity
+                </p>
               </div>
             </motion.div>
-            <motion.div {...fadeIn} transition={{ delay: 0.1 }} className="relative aspect-[4/3] rounded-xl overflow-hidden">
+            <motion.div
+              {...fadeIn}
+              transition={{ delay: 0.1 }}
+              className="relative aspect-[4/3] rounded-xl overflow-hidden"
+            >
               <img
                 src="https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?q=80&w=2070"
                 alt="Pakistan Urban Development"
@@ -474,7 +527,9 @@ export default function HeritageTours() {
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
               <div className="absolute bottom-6 left-6">
-                <h4 className="font-serif text-2xl font-bold text-white">Urban Progress</h4>
+                <h4 className="font-serif text-2xl font-bold text-white">
+                  Urban Progress
+                </h4>
                 <p className="text-white/80">New infrastructure and growth</p>
               </div>
             </motion.div>
@@ -492,8 +547,9 @@ export default function HeritageTours() {
                   Book Your Heritage Experience
                 </h2>
                 <p className="text-white/70 text-lg leading-relaxed">
-                  Ready to reconnect with your roots? Fill out this form and we'll get back to you 
-                  within 24 hours to plan your personalized heritage experience.
+                  Ready to reconnect with your roots? Fill out this form and
+                  we'll get back to you within 24 hours to plan your
+                  personalized heritage experience.
                 </p>
               </div>
 
@@ -504,7 +560,9 @@ export default function HeritageTours() {
                   </div>
                   <div>
                     <h3 className="font-bold text-lg">Virtual Home Visits</h3>
-                    <p className="text-white/70">$100 USD for a 60-minute live video tour</p>
+                    <p className="text-white/70">
+                      $100 USD for a 60-minute live video tour
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
@@ -513,7 +571,9 @@ export default function HeritageTours() {
                   </div>
                   <div>
                     <h3 className="font-bold text-lg">Heritage Imports</h3>
-                    <p className="text-white/70">Soil, handicrafts, and more from your village</p>
+                    <p className="text-white/70">
+                      Soil, handicrafts, and more from your village
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
@@ -522,7 +582,9 @@ export default function HeritageTours() {
                   </div>
                   <div>
                     <h3 className="font-bold text-lg">Photo Documentation</h3>
-                    <p className="text-white/70">Professional photos of your ancestral locations</p>
+                    <p className="text-white/70">
+                      Professional photos of your ancestral locations
+                    </p>
                   </div>
                 </div>
               </div>
@@ -533,66 +595,85 @@ export default function HeritageTours() {
                 <h3 className="font-serif text-2xl font-bold text-secondary mb-6">
                   Request Information
                 </h3>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-5"
+                >
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="name" className="text-secondary">Your Name</Label>
-                      <Input 
-                        id="name" 
-                        {...form.register("name")} 
+                      <Label htmlFor="name" className="text-secondary">
+                        Your Name
+                      </Label>
+                      <Input
+                        id="name"
+                        {...form.register("name")}
                         className="border-border bg-white text-secondary"
                         data-testid="input-tour-name"
                       />
                       {form.formState.errors.name && (
-                        <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
+                        <p className="text-sm text-destructive">
+                          {form.formState.errors.name.message}
+                        </p>
                       )}
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="phone" className="text-secondary">Phone Number</Label>
-                      <Input 
-                        id="phone" 
-                        {...form.register("phone")} 
+                      <Label htmlFor="phone" className="text-secondary">
+                        Phone Number
+                      </Label>
+                      <Input
+                        id="phone"
+                        {...form.register("phone")}
                         className="border-border bg-white text-secondary"
                         data-testid="input-tour-phone"
                       />
                       {form.formState.errors.phone && (
-                        <p className="text-sm text-destructive">{form.formState.errors.phone.message}</p>
+                        <p className="text-sm text-destructive">
+                          {form.formState.errors.phone.message}
+                        </p>
                       )}
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="text-secondary">Email Address</Label>
-                    <Input 
-                      id="email" 
-                      type="email" 
-                      {...form.register("email")} 
+                    <Label htmlFor="email" className="text-secondary">
+                      Email Address
+                    </Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      {...form.register("email")}
                       className="border-border bg-white text-secondary"
                       data-testid="input-tour-email"
                     />
                     {form.formState.errors.email && (
-                      <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
+                      <p className="text-sm text-destructive">
+                        {form.formState.errors.email.message}
+                      </p>
                     )}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="travelDates" className="text-secondary">Preferred Dates (Optional)</Label>
-                      <Input 
-                        id="travelDates" 
+                      <Label htmlFor="travelDates" className="text-secondary">
+                        Preferred Dates (Optional)
+                      </Label>
+                      <Input
+                        id="travelDates"
                         placeholder="e.g., March 2026"
-                        {...form.register("travelDates")} 
+                        {...form.register("travelDates")}
                         className="border-border bg-white text-secondary"
                         data-testid="input-tour-dates"
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="groupSize" className="text-secondary">Group Size</Label>
-                      <Input 
-                        id="groupSize" 
-                        type="number" 
+                      <Label htmlFor="groupSize" className="text-secondary">
+                        Group Size
+                      </Label>
+                      <Input
+                        id="groupSize"
+                        type="number"
                         min={1}
-                        {...form.register("groupSize", { valueAsNumber: true })} 
+                        {...form.register("groupSize", { valueAsNumber: true })}
                         className="border-border bg-white text-secondary"
                         data-testid="input-tour-group-size"
                       />
@@ -603,15 +684,17 @@ export default function HeritageTours() {
                     <Label htmlFor="interestAreas" className="text-secondary">
                       What interests you?
                     </Label>
-                    <Input 
-                      id="interestAreas" 
+                    <Input
+                      id="interestAreas"
                       placeholder="e.g., Village visit, Lahore tour, Import soil from village"
-                      {...form.register("interestAreas")} 
+                      {...form.register("interestAreas")}
                       className="border-border bg-white text-secondary"
                       data-testid="input-tour-interests"
                     />
                     {form.formState.errors.interestAreas && (
-                      <p className="text-sm text-destructive">{form.formState.errors.interestAreas.message}</p>
+                      <p className="text-sm text-destructive">
+                        {form.formState.errors.interestAreas.message}
+                      </p>
                     )}
                   </div>
 
@@ -619,11 +702,11 @@ export default function HeritageTours() {
                     <Label htmlFor="message" className="text-secondary">
                       Tell us about your ancestral village or specific requests
                     </Label>
-                    <Textarea 
-                      id="message" 
+                    <Textarea
+                      id="message"
                       rows={4}
                       placeholder="Share your village name, district, and what you'd like us to find or show you..."
-                      {...form.register("message")} 
+                      {...form.register("message")}
                       className="border-border bg-white text-secondary"
                       data-testid="input-tour-message"
                     />
