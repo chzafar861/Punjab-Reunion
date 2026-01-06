@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link, useLocation } from "wouter";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,10 +11,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { useSEO } from "@/hooks/use-seo";
 import { Loader2, Mail, Lock, Eye, EyeOff } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { supabase } from "@/lib/supabase";
 
 const loginSchema = z.object({
-  emailOrUsername: z.string().min(1, "Email or username is required"),
+  email: z.string().email("Please enter a valid email"),
   password: z.string().min(1, "Password is required"),
 });
 
@@ -31,39 +31,48 @@ export default function Login() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      emailOrUsername: "",
+      email: "",
       password: "",
     },
   });
 
-  const loginMutation = useMutation({
-    mutationFn: async (data: LoginFormData) => {
-      const response = await apiRequest("POST", "/api/auth/login", data);
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+  const onSubmit = async (data: LoginFormData) => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: data.email,
+        password: data.password,
+      });
+
+      if (error) {
+        toast({
+          title: "Sign in failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["supabase-auth"] });
       toast({
         title: "Welcome back!",
         description: "You have been signed in successfully.",
       });
       setLocation("/");
-    },
-    onError: (error: any) => {
+    } catch (err: any) {
       toast({
         title: "Sign in failed",
-        description: error.message || "Invalid credentials",
+        description: err.message || "An error occurred",
         variant: "destructive",
       });
-    },
-  });
-
-  const onSubmit = (data: LoginFormData) => {
-    loginMutation.mutate(data);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -76,20 +85,20 @@ export default function Login() {
         <CardContent className="space-y-6">
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="emailOrUsername">Email or Username</Label>
+              <Label htmlFor="email">Email</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  id="emailOrUsername"
-                  type="text"
-                  placeholder="Enter your email or username"
+                  id="email"
+                  type="email"
+                  placeholder="Enter your email"
                   className="pl-10"
-                  data-testid="input-email-username"
-                  {...form.register("emailOrUsername")}
+                  data-testid="input-email"
+                  {...form.register("email")}
                 />
               </div>
-              {form.formState.errors.emailOrUsername && (
-                <p className="text-sm text-destructive">{form.formState.errors.emailOrUsername.message}</p>
+              {form.formState.errors.email && (
+                <p className="text-sm text-destructive">{form.formState.errors.email.message}</p>
               )}
             </div>
 
@@ -122,10 +131,10 @@ export default function Login() {
             <Button
               type="submit"
               className="w-full"
-              disabled={loginMutation.isPending}
+              disabled={isLoading}
               data-testid="button-login"
             >
-              {loginMutation.isPending ? (
+              {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Signing in...

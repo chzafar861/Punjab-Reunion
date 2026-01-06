@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link, useLocation } from "wouter";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { useSEO } from "@/hooks/use-seo";
 import { Loader2, Mail, Lock, Eye, EyeOff, User } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { supabase } from "@/lib/supabase";
 
 const signupSchema = z.object({
   email: z.string().email("Please enter a valid email"),
@@ -42,6 +42,7 @@ export default function Signup() {
   const queryClient = useQueryClient();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
@@ -55,31 +56,46 @@ export default function Signup() {
     },
   });
 
-  const signupMutation = useMutation({
-    mutationFn: async (data: SignupFormData) => {
-      const { confirmPassword, ...signupData } = data;
-      const response = await apiRequest("POST", "/api/auth/signup", signupData);
-      return response.json();
-    },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+  const onSubmit = async (data: SignupFormData) => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          data: {
+            username: data.username,
+            first_name: data.firstName || "",
+            last_name: data.lastName || "",
+          },
+          emailRedirectTo: `${window.location.origin}/verify-email`,
+        },
+      });
+
+      if (error) {
+        toast({
+          title: "Signup failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["supabase-auth"] });
       toast({
         title: "Account created!",
-        description: data.message || "Please check your email to verify your account.",
+        description: "Please check your email to verify your account.",
       });
       setLocation("/");
-    },
-    onError: (error: any) => {
+    } catch (err: any) {
       toast({
         title: "Signup failed",
-        description: error.message || "Failed to create account",
+        description: err.message || "Failed to create account",
         variant: "destructive",
       });
-    },
-  });
-
-  const onSubmit = (data: SignupFormData) => {
-    signupMutation.mutate(data);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -203,10 +219,10 @@ export default function Signup() {
             <Button
               type="submit"
               className="w-full"
-              disabled={signupMutation.isPending}
+              disabled={isLoading}
               data-testid="button-signup"
             >
-              {signupMutation.isPending ? (
+              {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Creating account...

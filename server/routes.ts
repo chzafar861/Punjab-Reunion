@@ -1,27 +1,14 @@
-import type { Express } from "express";
+import type { Express, RequestHandler } from "express";
 import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
-import { setupAuth, isAuthenticated, registerAuthRoutes } from "./replit_integrations/auth";
-import { registerCustomAuthRoutes, isCustomAuthenticated } from "./routes/customAuth";
+import { requireSupabaseUser, optionalSupabaseUser } from "./middleware/supabaseAuth";
 
-// Combined auth middleware - checks both Replit Auth and custom auth
-const isAuthenticatedCombined = async (req: any, res: any, next: any) => {
-  // First check custom session auth
-  const userId = req.session?.userId;
-  if (userId) {
-    const { getUserById } = await import("./services/auth");
-    const user = await getUserById(userId);
-    if (user) {
-      req.user = { claims: { sub: user.id }, ...user };
-      return next();
-    }
-  }
-  
-  // Fall back to Replit Auth
-  return isAuthenticated(req, res, next);
+// Auth middleware that uses Supabase JWT tokens
+const isAuthenticatedCombined: RequestHandler = async (req: any, res, next) => {
+  return requireSupabaseUser(req, res, next);
 };
 
 export async function registerRoutes(
@@ -29,15 +16,13 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   
-  // Setup authentication BEFORE other routes
-  await setupAuth(app);
-  registerAuthRoutes(app);
-  
-  // Register custom auth routes (email/password, Google)
-  registerCustomAuthRoutes(app);
-  
   // Register object storage routes for file uploads
   registerObjectStorageRoutes(app);
+  
+  // Supabase auth endpoint to get current user info
+  app.get("/api/auth/me", requireSupabaseUser, (req: any, res) => {
+    res.json(req.supabaseUser);
+  });
   
   // === PROFILES ===
   app.get(api.profiles.list.path, async (req, res) => {
@@ -81,9 +66,9 @@ export async function registerRoutes(
   });
 
   // Protected: Create profile (requires login)
-  app.post(api.profiles.create.path, isAuthenticatedCombined, async (req: any, res) => {
+  app.post(api.profiles.create.path, requireSupabaseUser, async (req: any, res) => {
     try {
-      const userId = req.user?.claims?.sub;
+      const userId = req.supabaseUser?.id;
       const input = api.profiles.create.input.parse(req.body);
       const profile = await storage.createProfile({ ...input, userId });
       const publicProfile = {
@@ -110,17 +95,17 @@ export async function registerRoutes(
   });
 
   // Protected: Get current user's profiles (includes private fields since it's their own data)
-  app.get("/api/my-profiles", isAuthenticatedCombined, async (req: any, res) => {
-    const userId = req.user?.claims?.sub;
+  app.get("/api/my-profiles", requireSupabaseUser, async (req: any, res) => {
+    const userId = req.supabaseUser?.id;
     const userProfiles = await storage.getProfilesByUserId(userId);
     // Return profiles with all fields since it's the user's own data
     res.json(userProfiles);
   });
 
   // Protected: Update profile (only owner can update)
-  app.put("/api/profiles/:id", isAuthenticatedCombined, async (req: any, res) => {
+  app.put("/api/profiles/:id", requireSupabaseUser, async (req: any, res) => {
     try {
-      const userId = req.user?.claims?.sub;
+      const userId = req.supabaseUser?.id;
       const profileId = Number(req.params.id);
       const input = api.profiles.create.input.partial().parse(req.body);
       const updated = await storage.updateProfile(profileId, userId, input);
@@ -140,8 +125,8 @@ export async function registerRoutes(
   });
 
   // Protected: Delete profile (only owner can delete)
-  app.delete("/api/profiles/:id", isAuthenticatedCombined, async (req: any, res) => {
-    const userId = req.user?.claims?.sub;
+  app.delete("/api/profiles/:id", requireSupabaseUser, async (req: any, res) => {
+    const userId = req.supabaseUser?.id;
     const profileId = Number(req.params.id);
     const deleted = await storage.deleteProfile(profileId, userId);
     if (!deleted) {
@@ -198,22 +183,13 @@ export async function registerRoutes(
   });
 
   // Create comment - optionally authenticated (stores userId if logged in)
-  app.post("/api/profiles/:profileId/comments", async (req: any, res) => {
+  app.post("/api/profiles/:profileId/comments", optionalSupabaseUser, async (req: any, res) => {
     try {
       const profileId = Number(req.params.profileId);
       const input = api.comments.create.input.parse({ ...req.body, profileId });
       
-      // Check if user is authenticated (either custom or Replit auth)
-      let userId: string | undefined;
-      if (req.session?.userId) {
-        const { getUserById } = await import("./services/auth");
-        const user = await getUserById(req.session.userId);
-        if (user) {
-          userId = user.id;
-        }
-      } else if (req.user?.claims?.sub) {
-        userId = req.user.claims.sub;
-      }
+      // Use Supabase user ID if authenticated
+      const userId = req.supabaseUser?.id;
       
       const comment = await storage.createProfileComment({ ...input, userId });
       res.status(201).json(comment);
@@ -229,9 +205,9 @@ export async function registerRoutes(
   });
 
   // Protected: Update comment (only owner can update)
-  app.put("/api/comments/:id", isAuthenticatedCombined, async (req: any, res) => {
+  app.put("/api/comments/:id", requireSupabaseUser, async (req: any, res) => {
     try {
-      const userId = req.user?.claims?.sub;
+      const userId = req.supabaseUser?.id;
       const commentId = Number(req.params.id);
       const { content } = req.body;
       
@@ -250,8 +226,8 @@ export async function registerRoutes(
   });
 
   // Protected: Delete comment (only owner can delete)
-  app.delete("/api/comments/:id", isAuthenticatedCombined, async (req: any, res) => {
-    const userId = req.user?.claims?.sub;
+  app.delete("/api/comments/:id", requireSupabaseUser, async (req: any, res) => {
+    const userId = req.supabaseUser?.id;
     const commentId = Number(req.params.id);
     const deleted = await storage.deleteProfileComment(commentId, userId);
     if (!deleted) {
