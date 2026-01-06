@@ -22,11 +22,14 @@ type ContactFormData = z.infer<typeof contactFormSchema>;
 
 export default function Contact() {
   useSEO({
-    title: "Contact Us - Get in Touch",
-    description: "Have questions about the 47DaPunjab heritage platform? Contact us for help with profile submissions, heritage tours, or finding your ancestral roots in Punjab.",
-    keywords: "contact 47DaPunjab, heritage inquiry, partition research help, ancestral village search, Punjab roots",
+    title: "Contact 47DaPunjab | Punjabi Ancestral Roots & Heritage Support",
+    description:
+      "Contact 47DaPunjab for help with Punjabi ancestral research, 1947 Partition stories, heritage tours, or submitting your family history from Punjab.",
+    keywords:
+      "contact 47DaPunjab, Punjabi ancestry help, 1947 Partition research, ancestral village Punjab, Punjabi heritage support",
     canonicalPath: "/contact",
   });
+
 
   const { toast } = useToast();
   const createInquiry = useCreateInquiry();

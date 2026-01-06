@@ -14,11 +14,14 @@ export default function Home() {
   const { data: profiles, isLoading } = useProfiles();
 
   useSEO({
-    title: "Home - Reconnecting Roots Across Borders",
-    description: "A digital heritage platform helping the Punjabi diaspora reconnect with ancestral villages in Pakistan. Document family stories from 1947 partition, explore heritage tours, and preserve precious memories.",
-    keywords: "Punjab heritage, 1947 partition, ancestry tracing, Sikh genealogy, ancestral village Pakistan, family roots Punjab, partition stories",
+    title: "Punjabi Ancestral Roots |Reconnecting RootsAcross Borders",
+    description:
+      "Reconnect with your Punjabi ancestral village in Pakistan. Explore 1947 Partition family stories, Sikh genealogy, heritage tours, and preserved memories.",
+    keywords:
+      "Punjabi ancestry, ancestral village Pakistan, 1947 Partition stories, Sikh genealogy, Punjabi heritage",
     canonicalPath: "/",
   });
+
   
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
