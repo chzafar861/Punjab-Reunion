@@ -4,10 +4,11 @@ import * as schema from "@shared/schema";
 
 const { Pool } = pg;
 
-const databaseUrl = process.env.DATABASE_URL;
+// Prefer SUPABASE_DATABASE_URL for Supabase deployment, fallback to DATABASE_URL for local/Replit
+const databaseUrl = process.env.SUPABASE_DATABASE_URL || process.env.DATABASE_URL;
 
 if (!databaseUrl) {
-  console.error("DATABASE_URL is not set. Database features will not work.");
+  console.error("No database URL configured. Set SUPABASE_DATABASE_URL or DATABASE_URL.");
 }
 
 export const pool = new Pool({ 
