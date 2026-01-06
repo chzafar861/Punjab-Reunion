@@ -12,11 +12,6 @@ import {
   Scroll
 } from "lucide-react";
 
-import badshahiMosqueImg from "@assets/Badshahi_Mosque_1767631924193.jpg";
-import modernLahoreImg from "@assets/Modern_Lahore_1767631924193.jpg";
-import villageLifeImg from "@assets/Village_Life_1767631924193.jpg";
-import ruralVillageImg from "@assets/Rural_Punjab_Village_1767631924193.jpg";
-
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
   whileInView: { opacity: 1, y: 0 },
@@ -26,28 +21,28 @@ const fadeIn = {
 const landmarks = [
   {
     name: "Badshahi Mosque",
-    image: badshahiMosqueImg,
+    image: "https://images.unsplash.com/photo-1567157577867-05ccb1388e66?q=80&w=2074",
     year: "1673",
     description: "One of the largest mosques in the world, built by Emperor Aurangzeb. Its stunning Mughal architecture attracts visitors from around the globe.",
     significance: "Mughal Era Masterpiece",
   },
   {
     name: "Lahore Fort (Shahi Qila)",
-    image: badshahiMosqueImg,
+    image: "https://images.unsplash.com/photo-1570168007204-dfb528c6958f?q=80&w=2069",
     year: "1566",
     description: "A UNESCO World Heritage Site, this citadel contains palaces, halls, and gardens from the Mughal emperors who ruled from Lahore.",
     significance: "UNESCO World Heritage",
   },
   {
     name: "Shalimar Gardens",
-    image: modernLahoreImg,
+    image: "https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?q=80&w=2070",
     year: "1641",
     description: "Built by Emperor Shah Jahan, these terraced gardens represent the height of Mughal horticultural art with their fountains and pavilions.",
     significance: "Mughal Garden Heritage",
   },
   {
     name: "Data Darbar",
-    image: badshahiMosqueImg,
+    image: "https://images.unsplash.com/photo-1599661046289-e31897846e41?q=80&w=2070",
     year: "11th Century",
     description: "The shrine of Hazrat Data Ganj Bakhsh, one of the most revered Sufi saints in South Asia, drawing millions of devotees annually.",
     significance: "Sufi Heritage",

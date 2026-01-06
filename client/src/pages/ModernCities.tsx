@@ -13,10 +13,6 @@ import {
   Globe
 } from "lucide-react";
 
-import modernLahoreImg from "@assets/Modern_Lahore_1767631924193.jpg";
-import urbanDevelopmentImg from "@assets/Urban_Development_1767631924193.jpg";
-import ruralVillageImg from "@assets/Rural_Punjab_Village_1767631924193.jpg";
-
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
   whileInView: { opacity: 1, y: 0 },
