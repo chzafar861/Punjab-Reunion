@@ -15,8 +15,8 @@ import {
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
-  const [location] = useLocation();
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const [location, setLocation] = useLocation();
+  const { user, isAuthenticated, isLoading, logout, isLoggingOut } = useAuth();
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -83,10 +83,15 @@ export function Navigation() {
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <a href="/api/logout" className="cursor-pointer" data-testid="button-logout">
+                      <button
+                        type="button"
+                        onClick={() => logout(undefined, { onSuccess: () => setLocation("/") })}
+                        className="cursor-pointer w-full text-left"
+                        data-testid="button-logout"
+                      >
                         <LogOut className="mr-2 h-4 w-4" />
                         Sign Out
-                      </a>
+                      </button>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -166,10 +171,18 @@ export function Navigation() {
               )}
               <div className="pt-2 border-t border-border">
                 {isAuthenticated ? (
-                  <a href="/api/logout" className="text-lg font-medium py-2 text-secondary flex items-center gap-2" data-testid="button-mobile-logout">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      logout(undefined, { onSuccess: () => setLocation("/") });
+                      setIsOpen(false);
+                    }}
+                    className="text-lg font-medium py-2 text-secondary flex items-center gap-2 w-full text-left"
+                    data-testid="button-mobile-logout"
+                  >
                     <LogOut className="h-5 w-5" />
                     Sign Out
-                  </a>
+                  </button>
                 ) : (
                   <div className="flex flex-col gap-2">
                     <Link 
