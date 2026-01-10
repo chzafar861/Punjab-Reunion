@@ -95,7 +95,7 @@ export function Navigation() {
               <div className="flex items-center gap-2">
                 <Link href="/login">
                   <Button variant="ghost" data-testid="button-login">
-                    Sign In
+                    LogIn
                   </Button>
                 </Link>
                 <Link href="/signup">

@@ -78,7 +78,7 @@ export default function VerifyEmail() {
               <p className="text-lg font-medium text-secondary">{message}</p>
               <div className="flex gap-4">
                 <Link href="/login">
-                  <Button variant="outline" data-testid="button-go-login">Sign In</Button>
+                  <Button variant="outline" data-testid="button-go-login">logIn</Button>
                 </Link>
                 <Link href="/signup">
                   <Button data-testid="button-go-signup">Create Account</Button>
