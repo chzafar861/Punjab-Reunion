@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation, Link } from "wouter";
 import { useMutation } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
@@ -39,13 +40,37 @@ export default function VerifyEmail() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
-    
-    if (token) {
-      verifyMutation.mutate(token);
-    } else {
-      setStatus("error");
-      setMessage("No verification token provided");
-    }
+
+    const handle = async () => {
+      if (token) {
+        verifyMutation.mutate(token);
+        return;
+      }
+
+      // Try Supabase redirect flow (access_token/refresh_token in URL hash)
+      try {
+        const hash = window.location.hash.startsWith("#") ? window.location.hash.slice(1) : window.location.hash;
+        const hashParams = new URLSearchParams(hash);
+        const access_token = hashParams.get("access_token");
+        const refresh_token = hashParams.get("refresh_token");
+
+        if (access_token) {
+          // setSession may not be listed on the typed client in some setups, use any to be safe
+          await (supabase.auth as any).setSession({ access_token, refresh_token });
+          setStatus("success");
+          setMessage("Email verified successfully!");
+          return;
+        }
+
+        setStatus("error");
+        setMessage("No verification token provided");
+      } catch (err: any) {
+        setStatus("error");
+        setMessage(err?.message || "Verification failed");
+      }
+    };
+
+    handle();
   }, []);
 
   return (
