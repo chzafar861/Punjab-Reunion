@@ -11,4 +11,4 @@
 
 ## Issue 3: Upload URL Issue
 - [x] Investigate why upload URL is resolving to production URL instead of local
-- [x] Fix URL resolution in use-upload.ts hook
+- [x] Fix URL resolution in use-upload.ts hook (updated getUploadParameters to use window.location.origin)
