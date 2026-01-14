@@ -58,6 +58,18 @@ export default function Login() {
         return;
       }
 
+      // Check if email is verified
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email_confirmed_at) {
+        toast({
+          title: "Email verification required",
+          description: "Please verify your email address to continue.",
+          variant: "destructive",
+        });
+        setLocation("/verify-email");
+        return;
+      }
+
       queryClient.invalidateQueries({ queryKey: ["supabase-auth"] });
       toast({
         title: "Welcome back!",

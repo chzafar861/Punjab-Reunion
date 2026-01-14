@@ -62,7 +62,9 @@ export function useUpload(options: UseUploadOptions = {}) {
    */
   const requestUploadUrl = useCallback(
     async (file: File): Promise<UploadResponse> => {
-      const response = await fetch("/api/uploads/request-url", {
+      // Use relative URL which will resolve to the current domain
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      const response = await fetch(`${baseUrl}/api/uploads/request-url`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

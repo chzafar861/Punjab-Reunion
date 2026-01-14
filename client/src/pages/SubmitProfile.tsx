@@ -74,6 +74,7 @@ export default function SubmitProfile() {
       </div>
     );
   }
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string>("");
   const { uploadFile, isUploading } = useUpload({
     onSuccess: (response) => {
@@ -107,7 +108,7 @@ export default function SubmitProfile() {
     },
   });
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (!file.type.startsWith("image/")) {
@@ -118,32 +119,56 @@ export default function SubmitProfile() {
         });
         return;
       }
-      await uploadFile(file);
+      setSelectedFile(file);
+      setUploadedFileName(file.name);
     }
   };
 
-  const onSubmit = (data: ProfileFormData) => {
-    const cleanedData = {
-      ...data,
-      email: data.email || undefined,
-      phone: data.phone || undefined,
-    };
-    createProfile.mutate(cleanedData, {
-      onSuccess: () => {
-        toast({
-          title: "Profile Submitted",
-          description: "Thank you for contributing to the archive.",
-        });
-        setLocation("/directory");
-      },
-      onError: (err) => {
-        toast({
-          title: "Submission Failed",
-          description: err.message,
-          variant: "destructive",
-        });
-      },
-    });
+  const onSubmit = async (data: ProfileFormData) => {
+    try {
+      // Upload file first if selected
+      if (selectedFile) {
+        const uploadResponse = await uploadFile(selectedFile);
+        if (!uploadResponse) {
+          toast({
+            title: "Upload Failed",
+            description: "Failed to upload photo. Please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+        // The uploadFile hook will set the photoUrl via onSuccess callback
+      }
+
+      const cleanedData = {
+        ...data,
+        email: data.email || undefined,
+        phone: data.phone || undefined,
+      };
+
+      createProfile.mutate(cleanedData, {
+        onSuccess: () => {
+          toast({
+            title: "Profile Submitted",
+            description: "Thank you for contributing to the archive.",
+          });
+          setLocation("/directory");
+        },
+        onError: (err) => {
+          toast({
+            title: "Submission Failed",
+            description: err.message,
+            variant: "destructive",
+          });
+        },
+      });
+    } catch (error: any) {
+      toast({
+        title: "Upload Failed",
+        description: error.message || "Failed to upload photo. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
