@@ -1,5 +1,18 @@
 import { db } from "./db";
-import { profiles, inquiries, tourInquiries, profileComments, type InsertProfile, type InsertInquiry, type InsertTourInquiry, type InsertProfileComment, type Profile, type Inquiry, type TourInquiry, type ProfileComment } from "@shared/schema";
+import {
+  profiles,
+  inquiries,
+  tourInquiries,
+  profileComments,
+  type InsertProfile,
+  type InsertInquiry,
+  type InsertTourInquiry,
+  type InsertProfileComment,
+  type Profile,
+  type Inquiry,
+  type TourInquiry,
+  type ProfileComment,
+} from "@shared/schema";
 import { eq, ilike, or, desc } from "drizzle-orm";
 
 export interface IStorage {
@@ -7,57 +20,85 @@ export interface IStorage {
   getProfile(id: number): Promise<Profile | undefined>;
   getProfilesByUserId(userId: string): Promise<Profile[]>;
   createProfile(profile: InsertProfile & { userId?: string }): Promise<Profile>;
-  updateProfile(id: number, userId: string, profile: Partial<InsertProfile>): Promise<Profile | null>;
+  updateProfile(
+    id: number,
+    userId: string,
+    profile: Partial<InsertProfile>
+  ): Promise<Profile | null>;
   deleteProfile(id: number, userId: string): Promise<boolean>;
   createInquiry(inquiry: InsertInquiry): Promise<Inquiry>;
   createTourInquiry(tourInquiry: InsertTourInquiry): Promise<TourInquiry>;
   getProfileComments(profileId: number): Promise<ProfileComment[]>;
   getProfileComment(id: number): Promise<ProfileComment | undefined>;
-  createProfileComment(comment: InsertProfileComment & { userId?: string }): Promise<ProfileComment>;
-  updateProfileComment(id: number, userId: string, content: string): Promise<ProfileComment | null>;
+  createProfileComment(
+    comment: InsertProfileComment & { userId?: string }
+  ): Promise<ProfileComment>;
+  updateProfileComment(
+    id: number,
+    userId: string,
+    content: string
+  ): Promise<ProfileComment | null>;
   deleteProfileComment(id: number, userId: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
   async getProfiles(search?: string, district?: string): Promise<Profile[]> {
     let query = db.select().from(profiles).orderBy(desc(profiles.createdAt));
-    
+
     const filters = [];
     if (search) {
-      filters.push(or(
-        ilike(profiles.fullName, `%${search}%`),
-        ilike(profiles.villageName, `%${search}%`),
-        ilike(profiles.district, `%${search}%`)
-      ));
+      filters.push(
+        or(
+          ilike(profiles.fullName, `%${search}%`),
+          ilike(profiles.villageName, `%${search}%`),
+          ilike(profiles.district, `%${search}%`)
+        )
+      );
     }
-    
+
     if (district) {
       filters.push(ilike(profiles.district, `%${district}%`));
     }
 
     if (filters.length > 0) {
-       // @ts-ignore
-       return await query.where(...filters);
+      // @ts-ignore
+      return await query.where(...filters);
     }
-    
+
     return await query;
   }
 
   async getProfile(id: number): Promise<Profile | undefined> {
-    const [profile] = await db.select().from(profiles).where(eq(profiles.id, id));
+    const [profile] = await db
+      .select()
+      .from(profiles)
+      .where(eq(profiles.id, id));
     return profile;
   }
 
   async getProfilesByUserId(userId: string): Promise<Profile[]> {
-    return await db.select().from(profiles).where(eq(profiles.userId, userId)).orderBy(desc(profiles.createdAt));
+    return await db
+      .select()
+      .from(profiles)
+      .where(eq(profiles.userId, userId))
+      .orderBy(desc(profiles.createdAt));
   }
 
-  async createProfile(insertProfile: InsertProfile & { userId?: string }): Promise<Profile> {
-    const [profile] = await db.insert(profiles).values(insertProfile).returning();
+  async createProfile(
+    insertProfile: InsertProfile & { userId?: string }
+  ): Promise<Profile> {
+    const [profile] = await db
+      .insert(profiles)
+      .values(insertProfile)
+      .returning();
     return profile;
   }
 
-  async updateProfile(id: number, userId: string, updateData: Partial<InsertProfile>): Promise<Profile | null> {
+  async updateProfile(
+    id: number,
+    userId: string,
+    updateData: Partial<InsertProfile>
+  ): Promise<Profile | null> {
     const existing = await this.getProfile(id);
     if (!existing || existing.userId !== userId) {
       return null;
@@ -70,7 +111,11 @@ export class DatabaseStorage implements IStorage {
         cleanedData[key] = value;
       }
     }
-    const [updated] = await db.update(profiles).set(cleanedData).where(eq(profiles.id, id)).returning();
+    const [updated] = await db
+      .update(profiles)
+      .set(cleanedData)
+      .where(eq(profiles.id, id))
+      .returning();
     return updated;
   }
 
@@ -84,35 +129,63 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createInquiry(insertInquiry: InsertInquiry): Promise<Inquiry> {
-    const [inquiry] = await db.insert(inquiries).values(insertInquiry).returning();
+    const [inquiry] = await db
+      .insert(inquiries)
+      .values(insertInquiry)
+      .returning();
     return inquiry;
   }
 
-  async createTourInquiry(tourInquiry: InsertTourInquiry): Promise<TourInquiry> {
-    const [inquiry] = await db.insert(tourInquiries).values(tourInquiry).returning();
+  async createTourInquiry(
+    tourInquiry: InsertTourInquiry
+  ): Promise<TourInquiry> {
+    const [inquiry] = await db
+      .insert(tourInquiries)
+      .values(tourInquiry)
+      .returning();
     return inquiry;
   }
 
   async getProfileComments(profileId: number): Promise<ProfileComment[]> {
-    return await db.select().from(profileComments).where(eq(profileComments.profileId, profileId)).orderBy(desc(profileComments.createdAt));
+    return await db
+      .select()
+      .from(profileComments)
+      .where(eq(profileComments.profileId, profileId))
+      .orderBy(desc(profileComments.createdAt));
   }
 
   async getProfileComment(id: number): Promise<ProfileComment | undefined> {
-    const [comment] = await db.select().from(profileComments).where(eq(profileComments.id, id));
+    const [comment] = await db
+      .select()
+      .from(profileComments)
+      .where(eq(profileComments.id, id));
     return comment;
   }
 
-  async createProfileComment(comment: InsertProfileComment & { userId?: string }): Promise<ProfileComment> {
-    const [newComment] = await db.insert(profileComments).values(comment).returning();
+  async createProfileComment(
+    comment: InsertProfileComment & { userId?: string }
+  ): Promise<ProfileComment> {
+    const [newComment] = await db
+      .insert(profileComments)
+      .values(comment)
+      .returning();
     return newComment;
   }
 
-  async updateProfileComment(id: number, userId: string, content: string): Promise<ProfileComment | null> {
+  async updateProfileComment(
+    id: number,
+    userId: string,
+    content: string
+  ): Promise<ProfileComment | null> {
     const existing = await this.getProfileComment(id);
     if (!existing || existing.userId !== userId) {
       return null;
     }
-    const [updated] = await db.update(profileComments).set({ content }).where(eq(profileComments.id, id)).returning();
+    const [updated] = await db
+      .update(profileComments)
+      .set({ content })
+      .where(eq(profileComments.id, id))
+      .returning();
     return updated;
   }
 
