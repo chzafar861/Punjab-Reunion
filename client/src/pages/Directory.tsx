@@ -6,6 +6,7 @@ import { ProfileCard } from "@/components/ProfileCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useSEO } from "@/hooks/use-seo";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   Select,
   SelectContent,
@@ -15,6 +16,8 @@ import {
 } from "@/components/ui/select";
 
 export default function Directory() {
+  const { t } = useLanguage();
+  
   useSEO({
     title: "Profile Directory - Search Ancestral Records",
     description: "Browse and search through our directory of profiles documenting families who migrated during the 1947 partition. Find records by village name, district, or family name.",
@@ -41,10 +44,9 @@ export default function Directory() {
       {/* Header */}
       <div className="bg-secondary text-white py-16">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="font-serif text-4xl md:text-5xl font-bold mb-4">Directory of Profiles</h1>
+          <h1 className="font-serif text-4xl md:text-5xl font-bold mb-4">{t("directory.title")}</h1>
           <p className="text-white/70 max-w-2xl mx-auto">
-            Browse through our records of individuals and families who migrated. 
-            Filter by district or search by name/village.
+            {t("directory.subtitle")}
           </p>
         </div>
       </div>
@@ -55,7 +57,7 @@ export default function Directory() {
           <div className="relative flex-1 w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
             <Input 
-              placeholder="Search by name or village..." 
+              placeholder={t("directory.search")} 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-10 h-12 text-lg"
@@ -86,14 +88,14 @@ export default function Directory() {
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-20">
             <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-            <p className="text-muted-foreground">Loading profiles...</p>
+            <p className="text-muted-foreground">{t("common.loading")}</p>
           </div>
         ) : profiles?.length === 0 ? (
           <div className="text-center py-20 bg-muted/20 rounded-2xl border border-dashed border-border">
-            <h3 className="text-xl font-bold text-secondary mb-2">No profiles found</h3>
-            <p className="text-muted-foreground mb-6">Try adjusting your search or filters.</p>
+            <h3 className="text-xl font-bold text-secondary mb-2">{t("directory.noResults")}</h3>
+            <p className="text-muted-foreground mb-6">{t("common.retry")}</p>
             <Button variant="outline" onClick={() => { setSearch(""); setDistrict("all"); }}>
-              Clear Filters
+              {t("common.retry")}
             </Button>
           </div>
         ) : (

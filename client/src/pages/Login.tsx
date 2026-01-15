@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useSEO } from "@/hooks/use-seo";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Loader2, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
@@ -21,6 +22,8 @@ const loginSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function Login() {
+  const { t } = useLanguage();
+  
   useSEO({
     title: "Sign In - 47DaPunjab",
     description: "Sign in to your 47DaPunjab account to submit and manage heritage profiles.",
@@ -91,19 +94,19 @@ export default function Login() {
     <div className="min-h-screen bg-background flex items-center justify-center py-12 px-4">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
-          <CardTitle className="font-serif text-3xl text-secondary">Welcome Back</CardTitle>
-          <CardDescription>Sign in to your 47DaPunjab account</CardDescription>
+          <CardTitle className="font-serif text-3xl text-secondary">{t("auth.loginTitle")}</CardTitle>
+          <CardDescription>{t("auth.loginSubtitle")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("auth.email")}</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="email"
                   type="email"
-                  placeholder="Enter your email"
+                  placeholder={t("auth.emailPlaceholder")}
                   className="pl-10"
                   data-testid="input-email"
                   {...form.register("email")}
@@ -115,13 +118,13 @@ export default function Login() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t("auth.password")}</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
+                  placeholder={t("auth.passwordPlaceholder")}
                   className="pl-10 pr-10"
                   data-testid="input-password"
                   {...form.register("password")}
@@ -149,18 +152,18 @@ export default function Login() {
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing in...
+                  {t("auth.loggingIn")}
                 </>
               ) : (
-                "Sign In"
+                t("auth.login")
               )}
             </Button>
           </form>
 
           <p className="text-center text-sm text-muted-foreground">
-            Don't have an account?{" "}
+            {t("auth.noAccount")}{" "}
             <Link href="/signup" className="text-primary font-medium hover:underline" data-testid="link-signup">
-              Create one
+              {t("auth.signup")}
             </Link>
           </p>
         </CardContent>
