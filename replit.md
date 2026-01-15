@@ -64,14 +64,19 @@ The application supports 4 languages with comprehensive translations:
 - **Hindi** (hi) - हिन्दी
 
 **Translation System Architecture**:
-- `client/src/lib/translations.ts`: Central translation dictionary with 200+ keys per language
+- `client/src/lib/translations.ts`: Central translation dictionary with 400+ keys per language
 - `client/src/contexts/LanguageContext.tsx`: React Context for language state management
 - `client/src/components/LanguageSelector.tsx`: Globe icon dropdown for language switching
 - Language preference persisted in localStorage
 - RTL (right-to-left) support automatically enabled for Urdu
 
-**Translated Pages**: Home, Directory, Login, Signup, SubmitProfile, Contact, MyProfiles, VerifyEmail, NotFound
-**Remaining Pages**: HeritageTours, LahoreHistory, ModernCities, PunjabVillages, About, ProfileDetail (content-heavy pages)
+**Fully Translated Pages** (all 4 languages):
+- Home, Directory, Login, Signup, SubmitProfile, Contact, MyProfiles, VerifyEmail, NotFound
+- ModernCities (30+ keys: cities, articles, travel tips)
+- LahoreHistory (33 keys: landmarks, historical articles, Mughal heritage)
+- PunjabVillages (37 keys: villages, pre-partition life, ancestral homes)
+
+**Remaining Pages**: HeritageTours (main landing), About, ProfileDetail (content-heavy pages)
 
 ## Environment Variables
 
