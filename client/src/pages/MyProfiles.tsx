@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Edit, Trash2, Plus, Save, X } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import type { Profile } from "@shared/schema";
+import { useLanguage } from "@/contexts/LanguageContext";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function MyProfiles() {
+  const { t } = useLanguage();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
@@ -34,15 +36,15 @@ export default function MyProfiles() {
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       toast({
-        title: "Sign In Required",
-        description: "Please sign in to view your profiles.",
+        title: t("auth.signInRequired"),
+        description: t("auth.signInRequiredDesc"),
         variant: "destructive",
       });
       setTimeout(() => {
         setLocation("/login");
       }, 500);
     }
-  }, [authLoading, isAuthenticated, toast, setLocation]);
+  }, [authLoading, isAuthenticated, toast, setLocation, t]);
 
   const { data: profiles, isLoading } = useQuery<Profile[]>({
     queryKey: ["/api/my-profiles"],
@@ -58,10 +60,10 @@ export default function MyProfiles() {
       queryClient.invalidateQueries({ queryKey: ["/api/my-profiles"] });
       queryClient.invalidateQueries({ queryKey: ["/api/profiles"] });
       setEditingId(null);
-      toast({ title: "Profile Updated", description: "Your changes have been saved." });
+      toast({ title: t("myProfiles.profileUpdated"), description: t("myProfiles.profileUpdatedDesc") });
     },
     onError: (error: Error) => {
-      toast({ title: "Update Failed", description: error.message, variant: "destructive" });
+      toast({ title: t("myProfiles.updateFailed"), description: error.message, variant: "destructive" });
     },
   });
 
@@ -72,10 +74,10 @@ export default function MyProfiles() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/my-profiles"] });
       queryClient.invalidateQueries({ queryKey: ["/api/profiles"] });
-      toast({ title: "Profile Deleted", description: "The profile has been removed." });
+      toast({ title: t("myProfiles.profileDeleted"), description: t("myProfiles.profileDeletedDesc") });
     },
     onError: (error: Error) => {
-      toast({ title: "Delete Failed", description: error.message, variant: "destructive" });
+      toast({ title: t("myProfiles.deleteFailed"), description: error.message, variant: "destructive" });
     },
   });
 
@@ -111,7 +113,7 @@ export default function MyProfiles() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Redirecting to sign in...</p>
+        <p className="text-muted-foreground">{t("auth.redirecting")}</p>
       </div>
     );
   }
@@ -121,13 +123,13 @@ export default function MyProfiles() {
       <div className="container mx-auto px-4 max-w-4xl">
         <div className="flex justify-between items-center mb-8 flex-wrap gap-4">
           <div>
-            <h1 className="font-serif text-3xl font-bold text-secondary">My Profiles</h1>
-            <p className="text-muted-foreground">Manage the profiles you have submitted</p>
+            <h1 className="font-serif text-3xl font-bold text-secondary">{t("myProfiles.title")}</h1>
+            <p className="text-muted-foreground">{t("myProfiles.subtitle")}</p>
           </div>
           <Link href="/submit">
             <Button data-testid="button-create-profile">
               <Plus className="mr-2 h-4 w-4" />
-              Create New Profile
+              {t("myProfiles.createNew")}
             </Button>
           </Link>
         </div>
@@ -184,18 +186,18 @@ export default function MyProfiles() {
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Profile</AlertDialogTitle>
+                              <AlertDialogTitle>{t("myProfiles.deleteTitle")}</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Are you sure you want to delete this profile? This action cannot be undone.
+                                {t("myProfiles.deleteDescription")}
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
                               <AlertDialogAction
                                 onClick={() => deleteMutation.mutate(profile.id)}
                                 className="bg-destructive text-destructive-foreground"
                               >
-                                Delete
+                                {t("common.delete")}
                               </AlertDialogAction>
                             </AlertDialogFooter>
                           </AlertDialogContent>
@@ -209,7 +211,7 @@ export default function MyProfiles() {
                     <div className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label>Village Name</Label>
+                          <Label>{t("submit.villageName")}</Label>
                           <Input
                             value={editForm.villageName || ""}
                             onChange={(e) => setEditForm({ ...editForm, villageName: e.target.value })}
@@ -217,7 +219,7 @@ export default function MyProfiles() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label>District</Label>
+                          <Label>{t("submit.district")}</Label>
                           <Input
                             value={editForm.district || ""}
                             onChange={(e) => setEditForm({ ...editForm, district: e.target.value })}
@@ -225,7 +227,7 @@ export default function MyProfiles() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label>Year Left</Label>
+                          <Label>{t("submit.yearLeft")}</Label>
                           <Input
                             type="number"
                             value={editForm.yearLeft || ""}
@@ -234,7 +236,7 @@ export default function MyProfiles() {
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label>Current Location</Label>
+                          <Label>{t("submit.currentLocation")}</Label>
                           <Input
                             value={editForm.currentLocation || ""}
                             onChange={(e) => setEditForm({ ...editForm, currentLocation: e.target.value })}
@@ -243,7 +245,7 @@ export default function MyProfiles() {
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <Label>Story</Label>
+                        <Label>{t("submit.story")}</Label>
                         <Textarea
                           value={editForm.story || ""}
                           onChange={(e) => setEditForm({ ...editForm, story: e.target.value })}
@@ -255,14 +257,14 @@ export default function MyProfiles() {
                   ) : (
                     <div className="space-y-2">
                       <p className="text-sm text-muted-foreground">
-                        {profile.yearLeft && `Left in ${profile.yearLeft}`}
+                        {profile.yearLeft && `${t("myProfiles.leftIn")} ${profile.yearLeft}`}
                         {profile.yearLeft && profile.currentLocation && " • "}
-                        {profile.currentLocation && `Now in ${profile.currentLocation}`}
+                        {profile.currentLocation && `${t("myProfiles.nowIn")} ${profile.currentLocation}`}
                       </p>
                       <p className="text-sm line-clamp-3">{profile.story}</p>
                       <Link href={`/profile/${profile.id}`}>
                         <Button variant="ghost" className="px-0 text-primary" data-testid={`link-view-profile-${profile.id}`}>
-                          View Full Profile
+                          {t("myProfiles.viewFull")}
                         </Button>
                       </Link>
                     </div>
@@ -274,11 +276,11 @@ export default function MyProfiles() {
         ) : (
           <Card className="text-center py-12">
             <CardContent>
-              <p className="text-muted-foreground mb-4">You haven't submitted any profiles yet.</p>
+              <p className="text-muted-foreground mb-4">{t("myProfiles.noProfiles")}</p>
               <Link href="/submit">
                 <Button data-testid="button-submit-first">
                   <Plus className="mr-2 h-4 w-4" />
-                  Submit Your First Profile
+                  {t("myProfiles.submitFirst")}
                 </Button>
               </Link>
             </CardContent>

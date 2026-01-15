@@ -6,8 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
 import { useSEO } from "@/hooks/use-seo";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function VerifyEmail() {
+  const { t } = useLanguage();
+  
   useSEO({
     title: "Verify Email - 47DaPunjab",
     description: "Verify your email address for your 47DaPunjab account.",
@@ -23,17 +26,16 @@ export default function VerifyEmail() {
       const response = await fetch(`/api/auth/verify-email?token=${token}`);
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.message || "Verification failed");
+        throw new Error("failed");
       }
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       setStatus("success");
-      setMessage(data.message || "Email verified successfully!");
     },
-    onError: (error: any) => {
+    onError: () => {
       setStatus("error");
-      setMessage(error.message || "Verification failed");
+      setMessage("failed");
     },
   });
 
@@ -58,15 +60,14 @@ export default function VerifyEmail() {
           // setSession may not be listed on the typed client in some setups, use any to be safe
           await (supabase.auth as any).setSession({ access_token, refresh_token });
           setStatus("success");
-          setMessage("Email verified successfully!");
           return;
         }
 
         setStatus("error");
-        setMessage("No verification token provided");
+        setMessage("noToken");
       } catch (err: any) {
         setStatus("error");
-        setMessage(err?.message || "Verification failed");
+        setMessage("failed");
       }
     };
 
@@ -77,22 +78,22 @@ export default function VerifyEmail() {
     <div className="min-h-screen bg-background flex items-center justify-center py-12 px-4">
       <Card className="w-full max-w-md shadow-xl text-center">
         <CardHeader>
-          <CardTitle className="font-serif text-3xl text-secondary">Email Verification</CardTitle>
+          <CardTitle className="font-serif text-3xl text-secondary">{t("verify.pageTitle")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {status === "loading" && (
             <div className="flex flex-col items-center gap-4">
               <Loader2 className="h-12 w-12 animate-spin text-primary" />
-              <p className="text-muted-foreground">Verifying your email...</p>
+              <p className="text-muted-foreground">{t("verify.verifying")}</p>
             </div>
           )}
 
           {status === "success" && (
             <div className="flex flex-col items-center gap-4">
               <CheckCircle className="h-12 w-12 text-green-600" />
-              <p className="text-lg font-medium text-secondary">{message}</p>
+              <p className="text-lg font-medium text-secondary">{t("verify.successMessage")}</p>
               <Link href="/">
-                <Button data-testid="button-go-home">Go to Home</Button>
+                <Button data-testid="button-go-home">{t("verify.goHome")}</Button>
               </Link>
             </div>
           )}
@@ -100,13 +101,15 @@ export default function VerifyEmail() {
           {status === "error" && (
             <div className="flex flex-col items-center gap-4">
               <XCircle className="h-12 w-12 text-destructive" />
-              <p className="text-lg font-medium text-secondary">{message}</p>
+              <p className="text-lg font-medium text-secondary">
+                {message === "noToken" ? t("verify.noToken") : t("verify.failedMessage")}
+              </p>
               <div className="flex gap-4">
                 <Link href="/login">
-                  <Button variant="outline" data-testid="button-go-login">logIn</Button>
+                  <Button variant="outline" data-testid="button-go-login">{t("verify.login")}</Button>
                 </Link>
                 <Link href="/signup">
-                  <Button data-testid="button-go-signup">Create Account</Button>
+                  <Button data-testid="button-go-signup">{t("verify.createAccount")}</Button>
                 </Link>
               </div>
             </div>

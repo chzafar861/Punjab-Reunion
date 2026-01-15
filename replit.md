@@ -56,6 +56,23 @@ The `shared/` directory contains code used by both frontend and backend:
 
 **Heritage-Focused Theming**: Custom CSS variables in index.css define a warm, saffron/cream color palette. Design guidelines specify typography scales and component patterns for a nostalgic museum-archive aesthetic.
 
+### Multi-Language Support
+The application supports 4 languages with comprehensive translations:
+- **English** (en) - Default language
+- **Punjabi/Gurmukhi** (pa) - ਪੰਜਾਬੀ
+- **Urdu** (ur) - اردو (RTL support)
+- **Hindi** (hi) - हिन्दी
+
+**Translation System Architecture**:
+- `client/src/lib/translations.ts`: Central translation dictionary with 200+ keys per language
+- `client/src/contexts/LanguageContext.tsx`: React Context for language state management
+- `client/src/components/LanguageSelector.tsx`: Globe icon dropdown for language switching
+- Language preference persisted in localStorage
+- RTL (right-to-left) support automatically enabled for Urdu
+
+**Translated Pages**: Home, Directory, Login, Signup, SubmitProfile, Contact, MyProfiles, VerifyEmail, NotFound
+**Remaining Pages**: HeritageTours, LahoreHistory, ModernCities, PunjabVillages, About, ProfileDetail (content-heavy pages)
+
 ## Environment Variables
 
 ### Required for Supabase
