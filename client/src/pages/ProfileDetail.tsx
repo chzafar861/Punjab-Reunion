@@ -64,6 +64,11 @@ export default function ProfileDetail() {
   // Check if current user owns this profile
   const isProfileOwner = isAuthenticated && user?.id && profile?.userId === user.id;
 
+  // Move useSignedUrl to top level (before any conditional returns) to follow Rules of Hooks
+  const placeholderImage = "https://images.unsplash.com/photo-1544256658-63640b7952a2?w=800&h=800&fit=crop";
+  const signedImageUrl = useSignedUrl(profile?.photoUrl);
+  const displayImage = signedImageUrl || placeholderImage;
+
   useSEO({
     title: profile ? `${profile.fullName} from ${profile.villageName}` : "Profile Details",
     description: profile 
@@ -228,10 +233,6 @@ export default function ProfileDetail() {
       </div>
     );
   }
-
-  const placeholderImage = "https://images.unsplash.com/photo-1544256658-63640b7952a2?w=800&h=800&fit=crop";
-  const signedImageUrl = useSignedUrl(profile.photoUrl);
-  const displayImage = signedImageUrl || placeholderImage;
 
   return (
     <div className="min-h-screen bg-background pb-24 pt-8">
