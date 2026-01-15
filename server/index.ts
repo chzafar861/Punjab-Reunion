@@ -2,72 +2,23 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
-import { pool } from "./db";
+import { supabaseAdmin } from "./lib/supabase";
 
 const app = express();
+const httpServer = createServer(app);
 
-async function ensureTablesExist() {
-  if (!process.env.DATABASE_URL) {
-    console.warn("DATABASE_URL not set, skipping table creation");
-    return;
-  }
-  
-  let client;
+async function verifySupabaseConnection() {
   try {
-    client = await pool.connect();
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS profiles (
-        id SERIAL PRIMARY KEY,
-        full_name TEXT NOT NULL,
-        village_name TEXT NOT NULL,
-        district TEXT NOT NULL,
-        year_left INTEGER,
-        current_location TEXT,
-        story TEXT NOT NULL,
-        photo_url TEXT,
-        email TEXT,
-        phone TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
-      );
-      
-      CREATE TABLE IF NOT EXISTS inquiries (
-        id SERIAL PRIMARY KEY,
-        name TEXT NOT NULL,
-        email TEXT NOT NULL,
-        phone TEXT,
-        message TEXT NOT NULL,
-        profile_id INTEGER,
-        created_at TIMESTAMP DEFAULT NOW()
-      );
-      
-      CREATE TABLE IF NOT EXISTS tour_inquiries (
-        id SERIAL PRIMARY KEY,
-        name TEXT NOT NULL,
-        email TEXT NOT NULL,
-        phone TEXT NOT NULL,
-        travel_dates TEXT,
-        group_size INTEGER,
-        interest_areas TEXT NOT NULL,
-        message TEXT,
-        created_at TIMESTAMP DEFAULT NOW()
-      );
-      
-      CREATE TABLE IF NOT EXISTS profile_comments (
-        id SERIAL PRIMARY KEY,
-        profile_id INTEGER NOT NULL,
-        author_name TEXT NOT NULL,
-        content TEXT NOT NULL,
-        created_at TIMESTAMP DEFAULT NOW()
-      );
-    `);
-    console.log("Database tables verified/created successfully");
+    const { data, error } = await supabaseAdmin.from('profiles').select('id').limit(1);
+    if (error) {
+      console.warn("Supabase connection warning:", error.message);
+    } else {
+      console.log("Supabase connection verified successfully");
+    }
   } catch (err) {
-    console.error("Error creating tables:", err);
-  } finally {
-    if (client) client.release();
+    console.error("Error connecting to Supabase:", err);
   }
 }
-const httpServer = createServer(app);
 
 declare module "http" {
   interface IncomingMessage {
@@ -123,8 +74,7 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Ensure database tables exist (important for production)
-  await ensureTablesExist();
+  await verifySupabaseConnection();
   
   await registerRoutes(httpServer, app);
 
@@ -136,9 +86,6 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
   if (process.env.NODE_ENV === "production") {
     serveStatic(app);
   } else {
@@ -146,10 +93,6 @@ app.use((req, res, next) => {
     await setupVite(httpServer, app);
   }
 
-  // ALWAYS serve the app on the port specified in the environment variable PORT
-  // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || "5000", 10);
   httpServer.listen(
     {
