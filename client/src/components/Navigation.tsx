@@ -99,12 +99,12 @@ export function Navigation() {
             ) : (
               <div className="flex items-center gap-2">
                 <Link href="/login">
-                  <Button variant="ghost" data-testid="button-login">
+                  <Button variant="ghost" data-testid="link-login-nav">
                     LogIn
                   </Button>
                 </Link>
                 <Link href="/signup">
-                  <Button variant="default" data-testid="button-signup">
+                  <Button variant="default" data-testid="link-signup-nav">
                     Sign Up
                   </Button>
                 </Link>

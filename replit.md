@@ -30,10 +30,10 @@ Deployment target: Vercel with Supabase database
 - **Build Tool**: Vite for frontend, esbuild for server bundling
 
 ### Data Storage
-- **Database**: Supabase PostgreSQL (or any PostgreSQL via DATABASE_URL)
-- **ORM**: Drizzle ORM with drizzle-zod for schema validation
+- **Database**: Supabase PostgreSQL via REST API (supabase-js client)
+- **Storage Layer**: `server/storage.supabase.ts` implements IStorage interface using Supabase REST API
 - **Schema Location**: shared/schema.ts (profiles, inquiries, tour_inquiries, profile_comments tables)
-- **Migrations**: Managed via drizzle-kit push command
+- **Note**: Direct PostgreSQL connections are NOT used - all database operations go through Supabase REST API for reliability
 
 ### Authentication Flow
 - Frontend uses @supabase/supabase-js for signup/login/logout
@@ -86,8 +86,8 @@ The `shared/` directory contains code used by both frontend and backend:
 ## External Dependencies
 
 ### Database
-- Supabase PostgreSQL (or any PostgreSQL)
-- Drizzle ORM for database operations
+- Supabase PostgreSQL via REST API
+- `@supabase/supabase-js` for all database operations (no direct PostgreSQL connection)
 
 ### Key NPM Packages
 - @supabase/supabase-js: Supabase client for authentication
