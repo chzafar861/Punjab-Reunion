@@ -12,17 +12,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
   const [location, setLocation] = useLocation();
   const { user, isAuthenticated, isLoading, logout, isLoggingOut } = useAuth();
+  const { t } = useLanguage();
 
   const navLinks = [
-    { href: "/", label: "Home" },
-    { href: "/directory", label: "Directory" },
-    { href: "/tours", label: "Heritage Tours" },
-    { href: "/contact", label: "Contact Us" },
+    { href: "/", label: t("nav.home") },
+    { href: "/directory", label: t("nav.directory") },
+    { href: "/tours", label: t("nav.tours") },
+    { href: "/contact", label: t("nav.contact") },
   ];
 
   return (
@@ -59,7 +62,7 @@ export function Navigation() {
                 <Link href="/submit">
                   <Button variant="default" size="sm" className="gap-1" data-testid="button-submit-profile">
                     <PlusCircle className="h-4 w-4" />
-                    Submit Profile
+                    {t("nav.submit")}
                   </Button>
                 </Link>
                 <DropdownMenu>
@@ -78,7 +81,7 @@ export function Navigation() {
                     <DropdownMenuItem asChild>
                       <Link href="/my-profiles" className="cursor-pointer" data-testid="link-my-profiles">
                         <FileText className="mr-2 h-4 w-4" />
-                        My Profiles
+                        {t("nav.myProfiles")}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
@@ -90,24 +93,26 @@ export function Navigation() {
                         data-testid="button-logout"
                       >
                         <LogOut className="mr-2 h-4 w-4" />
-                        Sign Out
+                        {t("nav.logout")}
                       </button>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
+                <LanguageSelector />
               </>
             ) : (
               <div className="flex items-center gap-2">
                 <Link href="/login">
                   <Button variant="ghost" data-testid="link-login-nav">
-                    LogIn
+                    {t("nav.login")}
                   </Button>
                 </Link>
                 <Link href="/signup">
                   <Button variant="default" data-testid="link-signup-nav">
-                    Sign Up
+                    {t("nav.signup")}
                   </Button>
                 </Link>
+                <LanguageSelector />
               </div>
             )}
           </nav>
@@ -155,7 +160,7 @@ export function Navigation() {
                     onClick={() => setIsOpen(false)}
                     data-testid="link-nav-mobile-submit"
                   >
-                    Submit Profile
+                    {t("nav.submit")}
                   </Link>
                   <Link 
                     href="/my-profiles"
@@ -165,11 +170,11 @@ export function Navigation() {
                     onClick={() => setIsOpen(false)}
                     data-testid="link-nav-mobile-my-profiles"
                   >
-                    My Profiles
+                    {t("nav.myProfiles")}
                   </Link>
                 </>
               )}
-              <div className="pt-2 border-t border-border">
+              <div className="pt-2 border-t border-border flex items-center justify-between">
                 {isAuthenticated ? (
                   <button
                     type="button"
@@ -177,21 +182,21 @@ export function Navigation() {
                       logout(undefined, { onSuccess: () => setLocation("/") });
                       setIsOpen(false);
                     }}
-                    className="text-lg font-medium py-2 text-secondary flex items-center gap-2 w-full text-left"
+                    className="text-lg font-medium py-2 text-secondary flex items-center gap-2 text-left"
                     data-testid="button-mobile-logout"
                   >
                     <LogOut className="h-5 w-5" />
-                    Sign Out
+                    {t("nav.logout")}
                   </button>
                 ) : (
-                  <div className="flex flex-col gap-2">
+                  <div className="flex gap-4">
                     <Link 
                       href="/login"
                       className="text-lg font-medium py-2 text-primary"
                       onClick={() => setIsOpen(false)}
                       data-testid="button-mobile-login"
                     >
-                      Sign In
+                      {t("nav.login")}
                     </Link>
                     <Link 
                       href="/signup"
@@ -199,10 +204,11 @@ export function Navigation() {
                       onClick={() => setIsOpen(false)}
                       data-testid="button-mobile-signup"
                     >
-                      Create Account
+                      {t("nav.signup")}
                     </Link>
                   </div>
                 )}
+                <LanguageSelector />
               </div>
             </div>
           </motion.div>
