@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Loader2, UploadCloud, CheckCircle, Image } from "lucide-react";
-import { useSupabaseUpload } from "@/hooks/use-supabase-upload";
+import { useUpload } from "@/hooks/use-upload";
 import { useSEO } from "@/hooks/use-seo";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -61,12 +61,12 @@ export default function SubmitProfile() {
     },
   });
 
-  const { uploadFile, isUploading } = useSupabaseUpload({
-    bucket: "profile-photos",
-    folder: "uploads",
+  const { uploadFile, isUploading } = useUpload({
     onSuccess: (response) => {
-      form.setValue("photoUrl", response.publicUrl);
-      setUploadedFileName(response.fileName);
+      // Create full URL from objectPath for proper image display
+      const fullUrl = `${window.location.origin}${response.objectPath}`;
+      form.setValue("photoUrl", fullUrl);
+      setUploadedFileName(response.metadata.name);
       toast({
         title: t("toast.uploadSuccess"),
         description: t("toast.uploadSuccessDesc"),
