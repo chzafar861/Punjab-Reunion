@@ -23,6 +23,82 @@ export async function registerRoutes(
   app.get("/api/auth/me", requireSupabaseUser, (req: any, res) => {
     res.json(req.supabaseUser);
   });
+
+  // Check if username is available (for signup validation)
+  app.get("/api/auth/check-username/:username", async (req, res) => {
+    const { username } = req.params;
+    
+    if (!username || username.length < 3) {
+      return res.json({ available: false, message: "Username must be at least 3 characters" });
+    }
+    
+    try {
+      // Query Supabase admin API to find users with this username in metadata
+      const supabaseUrl = process.env.SUPABASE_URL;
+      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+      
+      if (!supabaseUrl || !supabaseServiceKey) {
+        // Can't verify - return error to prevent potential duplicates
+        return res.status(503).json({ 
+          available: false, 
+          error: true,
+          message: "Username validation temporarily unavailable" 
+        });
+      }
+      
+      // Fetch users with pagination to handle larger user bases
+      let allUsers: any[] = [];
+      let page = 1;
+      const perPage = 1000;
+      let hasMore = true;
+      
+      while (hasMore) {
+        const response = await fetch(`${supabaseUrl}/auth/v1/admin/users?page=${page}&per_page=${perPage}`, {
+          headers: {
+            'Authorization': `Bearer ${supabaseServiceKey}`,
+            'apikey': supabaseServiceKey,
+          },
+        });
+        
+        if (!response.ok) {
+          console.error("Failed to fetch users for username check");
+          return res.status(503).json({ 
+            available: false, 
+            error: true,
+            message: "Username validation temporarily unavailable" 
+          });
+        }
+        
+        const data = await response.json();
+        const users = data.users || [];
+        allUsers = allUsers.concat(users);
+        
+        // Check if we got fewer users than requested, meaning no more pages
+        hasMore = users.length === perPage;
+        page++;
+        
+        // Safety limit to prevent infinite loops
+        if (page > 100) break;
+      }
+      
+      // Check if any user has this username in their metadata (case-insensitive)
+      const usernameExists = allUsers.some((user: any) => 
+        user.user_metadata?.username?.toLowerCase() === username.toLowerCase()
+      );
+      
+      res.json({ 
+        available: !usernameExists,
+        message: usernameExists ? "Username is already taken" : "Username is available"
+      });
+    } catch (err) {
+      console.error("Username check error:", err);
+      return res.status(503).json({ 
+        available: false, 
+        error: true,
+        message: "Username validation temporarily unavailable" 
+      });
+    }
+  });
   
   // === PROFILES ===
   app.get(api.profiles.list.path, async (req, res) => {

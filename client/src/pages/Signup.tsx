@@ -62,6 +62,20 @@ export default function Signup() {
   const onSubmit = async (data: SignupFormData) => {
     setIsLoading(true);
     try {
+      // First check if username is available
+      const usernameCheck = await fetch(`/api/auth/check-username/${encodeURIComponent(data.username)}`);
+      const usernameResult = await usernameCheck.json();
+      
+      if (!usernameResult.available) {
+        toast({
+          title: usernameResult.error ? "Validation Error" : "Username taken",
+          description: usernameResult.message || "This username is already in use. Please choose a different one.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
       const { error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
