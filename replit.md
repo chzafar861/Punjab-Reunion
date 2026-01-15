@@ -32,8 +32,17 @@ Deployment target: Vercel with Supabase database
 ### Data Storage
 - **Database**: Supabase PostgreSQL via REST API (supabase-js client)
 - **Storage Layer**: `server/storage.supabase.ts` implements IStorage interface using Supabase REST API
+- **File Storage**: Replit Object Storage for profile photo uploads (`server/replit_integrations/object_storage/`)
 - **Schema Location**: shared/schema.ts (profiles, inquiries, tour_inquiries, profile_comments tables)
 - **Note**: Direct PostgreSQL connections are NOT used - all database operations go through Supabase REST API for reliability
+
+### Photo URL Handling
+Profile photos support multiple URL formats:
+- **Replit Object Storage**: Full URLs containing `/objects/` path (e.g., `https://app.repl.co/objects/uploads/...`)
+- **External URLs**: Direct URLs to external images (e.g., Unsplash)
+- **Legacy Supabase**: URLs containing `supabase` (attempts signed URL, falls back to placeholder if file not found)
+
+Photo upload flow uses two-step presigned URL process via `/api/uploads/request-url` endpoint.
 
 ### Authentication Flow
 - Frontend uses @supabase/supabase-js for signup/login/logout
