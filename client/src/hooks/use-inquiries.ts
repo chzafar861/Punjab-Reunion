@@ -1,28 +1,38 @@
 import { useMutation } from "@tanstack/react-query";
 import { api, type InquiryInput } from "@shared/routes";
+import { supabase } from "@/lib/supabase";
 
 export function useCreateInquiry() {
   return useMutation({
     mutationFn: async (data: InquiryInput) => {
-      // Validate input
       const validated = api.inquiries.create.input.parse(data);
       
-      const res = await fetch(api.inquiries.create.path, {
-        method: api.inquiries.create.method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(validated),
-        credentials: "include",
-      });
+      const { data: result, error } = await supabase
+        .from('inquiries')
+        .insert({
+          name: validated.name,
+          email: validated.email,
+          phone: validated.phone || null,
+          message: validated.message,
+          profile_id: validated.profileId || null,
+        })
+        .select()
+        .single();
       
-      if (!res.ok) {
-        if (res.status === 400) {
-          const error = api.inquiries.create.responses[400].parse(await res.json());
-          throw new Error(error.message);
-        }
-        throw new Error("Failed to send inquiry");
+      if (error) {
+        console.error('Supabase insert error:', error);
+        throw new Error(error.message || "Failed to send inquiry");
       }
       
-      return api.inquiries.create.responses[201].parse(await res.json());
+      return {
+        id: result.id,
+        name: result.name,
+        email: result.email,
+        phone: result.phone,
+        message: result.message,
+        profileId: result.profile_id,
+        createdAt: result.created_at,
+      };
     },
   });
 }

@@ -1,32 +1,72 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, buildUrl, type ProfileInput } from "@shared/routes";
+import { api, type ProfileInput } from "@shared/routes";
+import { supabase } from "@/lib/supabase";
+
+function mapProfileFromDb(row: any) {
+  return {
+    id: row.id,
+    fullName: row.full_name,
+    villageName: row.village_name,
+    district: row.district,
+    yearLeft: row.year_left,
+    currentLocation: row.current_location,
+    story: row.story,
+    photoUrl: row.photo_url,
+    email: row.email,
+    phone: row.phone,
+    userId: row.user_id,
+    createdAt: row.created_at,
+  };
+}
 
 export function useProfiles(search?: string, district?: string) {
-  const queryKey = [api.profiles.list.path, search, district].filter(Boolean);
+  const queryKey = ['/api/profiles', search, district].filter(Boolean);
   
   return useQuery({
     queryKey,
     queryFn: async () => {
-      const url = new URL(api.profiles.list.path, window.location.origin);
-      if (search) url.searchParams.set("search", search);
-      if (district) url.searchParams.set("district", district);
+      let query = supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
       
-      const res = await fetch(url.toString(), { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch profiles");
-      return api.profiles.list.responses[200].parse(await res.json());
+      if (search) {
+        query = query.or(`full_name.ilike.%${search}%,village_name.ilike.%${search}%,district.ilike.%${search}%`);
+      }
+      
+      if (district) {
+        query = query.eq('district', district);
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        console.error('Supabase fetch error:', error);
+        throw new Error("Failed to fetch profiles");
+      }
+      
+      return (data || []).map(mapProfileFromDb);
     },
   });
 }
 
 export function useProfile(id: number) {
   return useQuery({
-    queryKey: [api.profiles.get.path, id],
+    queryKey: ['/api/profiles', id],
     queryFn: async () => {
-      const url = buildUrl(api.profiles.get.path, { id });
-      const res = await fetch(url, { credentials: "include" });
-      if (res.status === 404) return null;
-      if (!res.ok) throw new Error("Failed to fetch profile");
-      return api.profiles.get.responses[200].parse(await res.json());
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error) {
+        if (error.code === 'PGRST116') return null;
+        console.error('Supabase fetch error:', error);
+        throw new Error("Failed to fetch profile");
+      }
+      
+      return data ? mapProfileFromDb(data) : null;
     },
     enabled: !!id && !isNaN(id),
   });
@@ -37,28 +77,34 @@ export function useCreateProfile() {
   
   return useMutation({
     mutationFn: async (data: ProfileInput) => {
-      // Validate with Zod schema from routes/schema
       const validated = api.profiles.create.input.parse(data);
       
-      const res = await fetch(api.profiles.create.path, {
-        method: api.profiles.create.method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(validated),
-        credentials: "include",
-      });
+      const { data: result, error } = await supabase
+        .from('profiles')
+        .insert({
+          full_name: validated.fullName,
+          village_name: validated.villageName,
+          district: validated.district,
+          year_left: validated.yearLeft,
+          current_location: validated.currentLocation,
+          story: validated.story,
+          photo_url: validated.photoUrl || null,
+          email: validated.email || null,
+          phone: validated.phone || null,
+          user_id: null,
+        })
+        .select()
+        .single();
       
-      if (!res.ok) {
-        if (res.status === 400) {
-          const error = api.profiles.create.responses[400].parse(await res.json());
-          throw new Error(error.message);
-        }
-        throw new Error("Failed to create profile");
+      if (error) {
+        console.error('Supabase insert error:', error);
+        throw new Error(error.message || "Failed to create profile");
       }
       
-      return api.profiles.create.responses[201].parse(await res.json());
+      return mapProfileFromDb(result);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.profiles.list.path] });
+      queryClient.invalidateQueries({ queryKey: ['/api/profiles'] });
     },
   });
 }
