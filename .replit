@@ -44,7 +44,9 @@ integrations = ["javascript_object_storage:2.0.0", "javascript_log_in_with_repli
 [userenv]
 
 [userenv.shared]
-VITE_SUPABASE_URL = "https://lhjiengodpyshbaxzofl.supabase.co"
-VITE_SUPABASE_ANON_KEY = "sb_publishable_e7Y65uTZ5LEliJR4upeWIg_ko8FhhHK"
-SUPABASE_URL = "https://lhjiengodpyshbaxzofl.supabase.co"
-SUPABASE_ANON_KEY = "sb_publishable_e7Y65uTZ5LEliJR4upeWIg_ko8FhhHK"
+VITE_SUPABASE_URL = "https://ckhmliamtdoywgcjipjw.supabase.co"
+VITE_SUPABASE_ANON_KEY = "sb_publishable_f0ezMHhZdmpPkITZ8RuOSQ_vqZGbgma"
+SUPABASE_URL = "https://ckhmliamtdoywgcjipjw.supabase.co"
+SUPABASE_ANON_KEY = "sb_publishable_f0ezMHhZdmpPkITZ8RuOSQ_vqZGbgma"
+SUPABASE_SERVICE_ROLE_KEY = "sb_secret_hBz8HDfVJ4mdGvflxP7NTQ_gYsLIsTy"
+SUPABASE_DATABASE_URL = "postgresql://postgres:NJ6NFWCh3linMH2k@db.ckhmliamtdoywgcjipjw.supabase.co:5432/postgres"
