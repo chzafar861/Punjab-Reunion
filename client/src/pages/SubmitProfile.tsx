@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Loader2, UploadCloud, CheckCircle, Image } from "lucide-react";
-import { useUpload } from "@/hooks/use-upload";
+import { useSupabaseUpload } from "@/hooks/use-supabase-upload";
 import { useSEO } from "@/hooks/use-seo";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -74,12 +74,13 @@ export default function SubmitProfile() {
       </div>
     );
   }
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string>("");
-  const { uploadFile, isUploading } = useUpload({
+  const { uploadFile, isUploading } = useSupabaseUpload({
+    bucket: "profile-photos",
+    folder: "uploads",
     onSuccess: (response) => {
-      form.setValue("photoUrl", response.objectPath);
-      setUploadedFileName(response.metadata.name);
+      form.setValue("photoUrl", response.publicUrl);
+      setUploadedFileName(response.fileName);
       toast({
         title: "Photo Uploaded",
         description: "Your image has been uploaded successfully.",
@@ -108,7 +109,7 @@ export default function SubmitProfile() {
     },
   });
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (!file.type.startsWith("image/")) {
@@ -119,56 +120,34 @@ export default function SubmitProfile() {
         });
         return;
       }
-      setSelectedFile(file);
       setUploadedFileName(file.name);
+      await uploadFile(file);
     }
   };
 
   const onSubmit = async (data: ProfileFormData) => {
-    try {
-      // Upload file first if selected
-      if (selectedFile) {
-        const uploadResponse = await uploadFile(selectedFile);
-        if (!uploadResponse) {
-          toast({
-            title: "Upload Failed",
-            description: "Failed to upload photo. Please try again.",
-            variant: "destructive",
-          });
-          return;
-        }
-        // The uploadFile hook will set the photoUrl via onSuccess callback
-      }
+    const cleanedData = {
+      ...data,
+      email: data.email || undefined,
+      phone: data.phone || undefined,
+    };
 
-      const cleanedData = {
-        ...data,
-        email: data.email || undefined,
-        phone: data.phone || undefined,
-      };
-
-      createProfile.mutate(cleanedData, {
-        onSuccess: () => {
-          toast({
-            title: "Profile Submitted",
-            description: "Thank you for contributing to the archive.",
-          });
-          setLocation("/directory");
-        },
-        onError: (err) => {
-          toast({
-            title: "Submission Failed",
-            description: err.message,
-            variant: "destructive",
-          });
-        },
-      });
-    } catch (error: any) {
-      toast({
-        title: "Upload Failed",
-        description: error.message || "Failed to upload photo. Please try again.",
-        variant: "destructive",
-      });
-    }
+    createProfile.mutate(cleanedData, {
+      onSuccess: () => {
+        toast({
+          title: "Profile Submitted",
+          description: "Thank you for contributing to the archive.",
+        });
+        setLocation("/directory");
+      },
+      onError: (err) => {
+        toast({
+          title: "Submission Failed",
+          description: err.message,
+          variant: "destructive",
+        });
+      },
+    });
   };
 
   return (
