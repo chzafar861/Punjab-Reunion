@@ -2,9 +2,13 @@ import { type Profile } from "@shared/schema";
 import { MapPin, Calendar, ArrowRight } from "lucide-react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
+import { useSignedUrl } from "@/hooks/use-signed-url";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export function ProfileCard({ profile, index = 0 }: { profile: Profile; index?: number }) {
+  const { t } = useLanguage();
   const placeholderImage = "https://images.unsplash.com/photo-1544256658-63640b7952a2?w=400&h=400&fit=crop"; 
+  const imageUrl = useSignedUrl(profile.photoUrl);
 
   return (
     <Link href={`/profile/${profile.id}`}>
@@ -17,12 +21,12 @@ export function ProfileCard({ profile, index = 0 }: { profile: Profile; index?: 
       >
         <div className="aspect-[4/3] overflow-hidden bg-muted relative">
           <img 
-            src={profile.photoUrl || placeholderImage} 
+            src={imageUrl || placeholderImage} 
             alt={profile.fullName}
             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
-            <span className="text-white font-medium text-sm">Read full story</span>
+            <span className="text-white font-medium text-sm">{t("profile.readFullStory")}</span>
           </div>
         </div>
 
@@ -38,18 +42,18 @@ export function ProfileCard({ profile, index = 0 }: { profile: Profile; index?: 
 
           <div className="space-y-1 mb-4 text-muted-foreground text-sm">
             <p className="flex items-center gap-2">
-              <span className="font-semibold text-foreground/80">Village:</span> {profile.villageName}
+              <span className="font-semibold text-foreground/80">{t("profile.village")}:</span> {profile.villageName}
             </p>
             {profile.yearLeft && (
               <p className="flex items-center gap-2">
                 <Calendar className="w-3 h-3" />
-                <span>Left in {profile.yearLeft}</span>
+                <span>{t("myProfiles.leftIn")} {profile.yearLeft}</span>
               </p>
             )}
           </div>
 
           <div className="inline-flex items-center gap-2 text-primary font-semibold text-sm">
-            View Profile <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+            {t("profile.viewProfile")} <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
           </div>
         </div>
       </motion.div>

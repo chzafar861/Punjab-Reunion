@@ -2,6 +2,7 @@ import { useRoute, useLocation } from "wouter";
 import { useEffect, useState } from "react";
 import { useProfile } from "@/hooks/use-profiles";
 import { useAuth } from "@/hooks/use-auth";
+import { useSignedUrl } from "@/hooks/use-signed-url";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -228,7 +229,9 @@ export default function ProfileDetail() {
     );
   }
 
-  const displayImage = profile.photoUrl || "https://images.unsplash.com/photo-1544256658-63640b7952a2?w=800&h=800&fit=crop";
+  const placeholderImage = "https://images.unsplash.com/photo-1544256658-63640b7952a2?w=800&h=800&fit=crop";
+  const signedImageUrl = useSignedUrl(profile.photoUrl);
+  const displayImage = signedImageUrl || placeholderImage;
 
   return (
     <div className="min-h-screen bg-background pb-24 pt-8">
