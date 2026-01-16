@@ -62,32 +62,29 @@ export default function Signup() {
   const onSubmit = async (data: SignupFormData) => {
     setIsLoading(true);
     try {
-      // First check if username is available
-      const usernameCheck = await fetch(`/api/auth/check-username/${encodeURIComponent(data.username)}`);
-      
-      // Handle non-OK responses
-      if (!usernameCheck.ok) {
-        const errorText = await usernameCheck.text();
-        console.error('Username check failed:', usernameCheck.status, errorText);
-        toast({
-          title: "Error",
-          description: "Could not verify username availability. Please try again.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
-      }
-      
-      const usernameResult = await usernameCheck.json();
-      
-      if (!usernameResult.available) {
-        toast({
-          title: usernameResult.error ? "Validation Error" : "Username taken",
-          description: usernameResult.message || "This username is already in use. Please choose a different one.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
+      // Try to check if username is available (optional - may not work on static hosting)
+      try {
+        const usernameCheck = await fetch(`/api/auth/check-username/${encodeURIComponent(data.username)}`);
+        
+        if (usernameCheck.ok) {
+          const contentType = usernameCheck.headers.get("content-type");
+          if (contentType?.includes("application/json")) {
+            const usernameResult = await usernameCheck.json();
+            
+            if (!usernameResult.available) {
+              toast({
+                title: usernameResult.error ? "Validation Error" : "Username taken",
+                description: usernameResult.message || "This username is already in use. Please choose a different one.",
+                variant: "destructive",
+              });
+              setIsLoading(false);
+              return;
+            }
+          }
+        }
+      } catch (checkErr) {
+        // Username check unavailable (e.g., static hosting) - proceed with signup
+        console.warn("Username availability check skipped:", checkErr);
       }
 
       const { data: signUpData, error } = await supabase.auth.signUp({
