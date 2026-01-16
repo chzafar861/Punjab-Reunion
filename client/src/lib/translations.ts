@@ -105,6 +105,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "profile.error": "Error",
     "profile.nameRequired": "Name is required",
     "profile.commentRequired": "Comment is required",
+    "profile.translating": "Translating...",
     
     "submit.title": "Submit a Profile",
     "submit.subtitle": "Share the details of a family member or friend who migrated. Help us build the most comprehensive directory.",
@@ -534,6 +535,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "profile.error": "ਗਲਤੀ",
     "profile.nameRequired": "ਨਾਮ ਜ਼ਰੂਰੀ ਹੈ",
     "profile.commentRequired": "ਟਿੱਪਣੀ ਜ਼ਰੂਰੀ ਹੈ",
+    "profile.translating": "ਅਨੁਵਾਦ ਹੋ ਰਿਹਾ ਹੈ...",
     
     "submit.title": "ਪ੍ਰੋਫਾਈਲ ਜਮ੍ਹਾਂ ਕਰੋ",
     "submit.subtitle": "ਕਿਸੇ ਪਰਿਵਾਰਕ ਮੈਂਬਰ ਜਾਂ ਦੋਸਤ ਦੀ ਜਾਣਕਾਰੀ ਸਾਂਝੀ ਕਰੋ ਜੋ ਹਿਜਰਤ ਕਰ ਗਏ।",
@@ -962,6 +964,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "profile.error": "غلطی",
     "profile.nameRequired": "نام ضروری ہے",
     "profile.commentRequired": "تبصرہ ضروری ہے",
+    "profile.translating": "ترجمہ ہو رہا ہے...",
     
     "submit.title": "پروفائل جمع کرائیں",
     "submit.subtitle": "کسی خاندان کے فرد یا دوست کی تفصیلات شیئر کریں جو ہجرت کر گئے۔",
@@ -1390,6 +1393,7 @@ export const translations: Record<Language, Record<string, string>> = {
     "profile.error": "त्रुटि",
     "profile.nameRequired": "नाम आवश्यक है",
     "profile.commentRequired": "टिप्पणी आवश्यक है",
+    "profile.translating": "अनुवाद हो रहा है...",
     
     "submit.title": "प्रोफ़ाइल जमा करें",
     "submit.subtitle": "किसी परिवार के सदस्य या दोस्त का विवरण साझा करें जो विस्थापित हुए।",

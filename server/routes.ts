@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
+import { registerTranslateRoutes } from "./replit_integrations/translate";
 import { requireSupabaseUser, optionalSupabaseUser } from "./middleware/supabaseAuth";
 
 // Auth middleware that uses Supabase JWT tokens
@@ -18,6 +19,9 @@ export async function registerRoutes(
   
   // Register object storage routes for file uploads
   registerObjectStorageRoutes(app);
+  
+  // Register translation routes for AI-powered content translation
+  registerTranslateRoutes(app);
   
   // Supabase auth endpoint to get current user info
   app.get("/api/auth/me", requireSupabaseUser, (req: any, res) => {

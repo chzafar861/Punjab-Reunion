@@ -50,13 +50,17 @@ export default function ProfileDetail() {
   const { data: profile, isLoading } = useProfile(id);
   const { toast } = useToast();
   const { user, isAuthenticated } = useAuth();
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   
   // State for comment editing
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [editingContent, setEditingContent] = useState("");
   const [deleteCommentId, setDeleteCommentId] = useState<number | null>(null);
   const [deleteProfileOpen, setDeleteProfileOpen] = useState(false);
+  
+  // State for translated story
+  const [translatedStory, setTranslatedStory] = useState<string | null>(null);
+  const [isTranslating, setIsTranslating] = useState(false);
   
   // Get display name from authenticated user
   const displayName = user?.username || 
@@ -82,6 +86,42 @@ export default function ProfileDetail() {
     canonicalPath: `/profile/${id}`,
     ogType: "article",
   });
+
+  // Translate story when language changes
+  useEffect(() => {
+    const translateStory = async () => {
+      if (!profile?.story || language === "en") {
+        setTranslatedStory(null);
+        return;
+      }
+
+      setIsTranslating(true);
+      try {
+        const response = await fetch("/api/translate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: profile.story,
+            targetLanguage: language,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setTranslatedStory(data.translatedText);
+        } else {
+          setTranslatedStory(null);
+        }
+      } catch (error) {
+        console.error("Translation error:", error);
+        setTranslatedStory(null);
+      } finally {
+        setIsTranslating(false);
+      }
+    };
+
+    translateStory();
+  }, [profile?.story, language]);
   
   const { data: comments = [], isLoading: commentsLoading } = useQuery<ProfileComment[]>({
     queryKey: ['/api/profiles', id, 'comments'],
@@ -312,9 +352,16 @@ export default function ProfileDetail() {
           <div className="p-8 md:p-12 space-y-8">
             <div className="prose prose-stone max-w-none">
               <h3 className="font-serif text-2xl font-bold text-secondary">{t("profile.theStory")}</h3>
-              <p className="text-foreground/80 leading-relaxed whitespace-pre-wrap">
-                {profile.story}
-              </p>
+              {isTranslating ? (
+                <div className="flex items-center gap-2 text-muted-foreground py-4">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>{t("profile.translating") || "Translating..."}</span>
+                </div>
+              ) : (
+                <p className="text-foreground/80 leading-relaxed whitespace-pre-wrap">
+                  {translatedStory || profile.story}
+                </p>
+              )}
             </div>
 
             {/* Share Button */}
