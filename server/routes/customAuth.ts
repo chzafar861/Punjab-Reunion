@@ -12,6 +12,7 @@ import {
 } from "../services/auth";
 import { sendVerificationEmail } from "../services/email";
 import { OAuth2Client } from "google-auth-library";
+import { generateToken, verifyToken } from "../lib/jwt";
 
 const signupSchema = z.object({
   email: z.string().email("Please enter a valid email"),
@@ -30,6 +31,10 @@ const loginSchema = z.object({
 const googleAuthSchema = z.object({
   credential: z.string(),
 });
+
+function getBaseUrl(req: any): string {
+  return process.env.APP_URL || `${req.protocol}://${req.get("host")}`;
+}
 
 export function registerCustomAuthRoutes(app: Express) {
   // Signup with email/password
@@ -53,21 +58,26 @@ export function registerCustomAuthRoutes(app: Express) {
       const user = await createUser(input);
       
       // Generate verification token
-      const token = await createVerificationToken(user.id);
+      const emailToken = await createVerificationToken(user.id);
       
       // Send verification email
-      const baseUrl = `${req.protocol}://${req.get("host")}`;
+      const baseUrl = getBaseUrl(req);
       try {
-        await sendVerificationEmail(input.email, token, baseUrl);
+        await sendVerificationEmail(input.email, emailToken, baseUrl);
       } catch (emailError) {
         console.error("Failed to send verification email:", emailError);
       }
       
-      // Log user in (set session)
-      (req as any).session.userId = user.id;
+      // Generate JWT token
+      const token = generateToken({
+        userId: user.id,
+        email: user.email!,
+        username: user.username,
+      });
       
       res.status(201).json({
         message: "Account created! Please check your email to verify your account.",
+        token,
         user: {
           id: user.id,
           email: user.email,
@@ -108,10 +118,15 @@ export function registerCustomAuthRoutes(app: Express) {
         return res.status(401).json({ message: "Invalid email/username or password" });
       }
       
-      // Set session
-      (req as any).session.userId = user.id;
+      // Generate JWT token
+      const token = generateToken({
+        userId: user.id,
+        email: user.email!,
+        username: user.username,
+      });
       
       res.json({
+        token,
         user: {
           id: user.id,
           email: user.email,
@@ -148,15 +163,25 @@ export function registerCustomAuthRoutes(app: Express) {
     res.json({ message: "Email verified successfully!" });
   });
 
-  // Resend verification email
+  // Resend verification email (requires JWT auth)
   app.post("/api/auth/resend-verification", async (req, res) => {
-    const userId = (req as any).session?.userId;
-    
-    if (!userId) {
+    const authHeader = req.headers.authorization;
+    let jwtToken: string | undefined;
+
+    if (authHeader?.startsWith("Bearer ")) {
+      jwtToken = authHeader.substring(7);
+    }
+
+    if (!jwtToken) {
       return res.status(401).json({ message: "Not authenticated" });
     }
+
+    const payload = verifyToken(jwtToken);
+    if (!payload) {
+      return res.status(401).json({ message: "Invalid token" });
+    }
     
-    const user = await getUserById(userId);
+    const user = await getUserById(payload.userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -165,11 +190,11 @@ export function registerCustomAuthRoutes(app: Express) {
       return res.status(400).json({ message: "Email already verified" });
     }
     
-    const token = await createVerificationToken(user.id);
-    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const emailToken = await createVerificationToken(user.id);
+    const baseUrl = getBaseUrl(req);
     
     try {
-      await sendVerificationEmail(user.email!, token, baseUrl);
+      await sendVerificationEmail(user.email!, emailToken, baseUrl);
       res.json({ message: "Verification email sent!" });
     } catch (err) {
       console.error("Failed to send verification email:", err);
@@ -193,23 +218,28 @@ export function registerCustomAuthRoutes(app: Express) {
         audience: clientId,
       });
       
-      const payload = ticket.getPayload();
-      if (!payload) {
+      const googlePayload = ticket.getPayload();
+      if (!googlePayload) {
         return res.status(400).json({ message: "Invalid Google token" });
       }
       
       const user = await createOrUpdateGoogleUser({
-        googleId: payload.sub,
-        email: payload.email!,
-        firstName: payload.given_name,
-        lastName: payload.family_name,
-        profileImageUrl: payload.picture,
+        googleId: googlePayload.sub,
+        email: googlePayload.email!,
+        firstName: googlePayload.given_name,
+        lastName: googlePayload.family_name,
+        profileImageUrl: googlePayload.picture,
       });
       
-      // Set session
-      (req as any).session.userId = user.id;
+      // Generate JWT token
+      const token = generateToken({
+        userId: user.id,
+        email: user.email!,
+        username: user.username,
+      });
       
       res.json({
+        token,
         user: {
           id: user.id,
           email: user.email,
@@ -226,15 +256,25 @@ export function registerCustomAuthRoutes(app: Express) {
     }
   });
 
-  // Get current user (custom session-based)
-  app.get("/api/auth/me", async (req, res) => {
-    const userId = (req as any).session?.userId;
-    
-    if (!userId) {
+  // Get current user (JWT-based)
+  app.get("/api/auth/custom-me", async (req, res) => {
+    const authHeader = req.headers.authorization;
+    let jwtToken: string | undefined;
+
+    if (authHeader?.startsWith("Bearer ")) {
+      jwtToken = authHeader.substring(7);
+    }
+
+    if (!jwtToken) {
       return res.status(401).json({ message: "Not authenticated" });
     }
+
+    const payload = verifyToken(jwtToken);
+    if (!payload) {
+      return res.status(401).json({ message: "Invalid token" });
+    }
     
-    const user = await getUserById(userId);
+    const user = await getUserById(payload.userId);
     if (!user) {
       return res.status(401).json({ message: "User not found" });
     }
@@ -250,22 +290,31 @@ export function registerCustomAuthRoutes(app: Express) {
     });
   });
 
-  // Logout
+  // Logout (for JWT, client just discards token)
   app.post("/api/auth/custom-logout", (req, res) => {
-    (req as any).session?.destroy?.(() => {});
     res.json({ message: "Logged out" });
   });
 }
 
-// Custom auth middleware
+// JWT-based auth middleware
 export const isCustomAuthenticated: RequestHandler = async (req, res, next) => {
-  const userId = (req as any).session?.userId;
-  
-  if (!userId) {
+  const authHeader = req.headers.authorization;
+  let jwtToken: string | undefined;
+
+  if (authHeader?.startsWith("Bearer ")) {
+    jwtToken = authHeader.substring(7);
+  }
+
+  if (!jwtToken) {
     return res.status(401).json({ message: "Unauthorized" });
   }
+
+  const payload = verifyToken(jwtToken);
+  if (!payload) {
+    return res.status(401).json({ message: "Unauthorized - Invalid token" });
+  }
   
-  const user = await getUserById(userId);
+  const user = await getUserById(payload.userId);
   if (!user) {
     return res.status(401).json({ message: "Unauthorized" });
   }
