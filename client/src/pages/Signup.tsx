@@ -64,6 +64,20 @@ export default function Signup() {
     try {
       // First check if username is available
       const usernameCheck = await fetch(`/api/auth/check-username/${encodeURIComponent(data.username)}`);
+      
+      // Handle non-OK responses
+      if (!usernameCheck.ok) {
+        const errorText = await usernameCheck.text();
+        console.error('Username check failed:', usernameCheck.status, errorText);
+        toast({
+          title: "Error",
+          description: "Could not verify username availability. Please try again.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+      
       const usernameResult = await usernameCheck.json();
       
       if (!usernameResult.available) {
@@ -76,7 +90,7 @@ export default function Signup() {
         return;
       }
 
-      const { error } = await supabase.auth.signUp({
+      const { data: signUpData, error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
@@ -92,9 +106,21 @@ export default function Signup() {
       if (error) {
         toast({
           title: "Signup failed",
-          description: error.message,
+          description: error.message || "An error occurred during signup",
           variant: "destructive",
         });
+        return;
+      }
+
+      // Check if user needs email confirmation
+      if (signUpData?.user && !signUpData?.session) {
+        // Email confirmation required
+        queryClient.invalidateQueries({ queryKey: ["supabase-auth"] });
+        toast({
+          title: "Check your email!",
+          description: "We've sent you a confirmation link. Please verify your email to complete signup.",
+        });
+        setLocation("/");
         return;
       }
 
