@@ -79,6 +79,10 @@ export function useCreateProfile() {
     mutationFn: async (data: ProfileInput) => {
       const validated = api.profiles.create.input.parse(data);
       
+      // Get the current authenticated user's ID
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id || null;
+      
       const { data: result, error } = await supabase
         .from('profiles')
         .insert({
@@ -91,7 +95,7 @@ export function useCreateProfile() {
           photo_url: validated.photoUrl || null,
           email: validated.email || null,
           phone: validated.phone || null,
-          user_id: null,
+          user_id: userId,
         })
         .select()
         .single();
@@ -105,6 +109,7 @@ export function useCreateProfile() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/profiles'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/my-profiles'] });
     },
   });
 }
