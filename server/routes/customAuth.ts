@@ -33,7 +33,13 @@ const googleAuthSchema = z.object({
 });
 
 function getBaseUrl(req: any): string {
-  return process.env.APP_URL || `${req.protocol}://${req.get("host")}`;
+  const appUrl = process.env.APP_URL;
+  if (appUrl) {
+    return appUrl;
+  }
+  // Fallback for development - always use HTTPS in production
+  const protocol = process.env.NODE_ENV === 'production' ? 'https' : req.protocol;
+  return `${protocol}://${req.get("host")}`;
 }
 
 export function registerCustomAuthRoutes(app: Express) {
@@ -319,7 +325,15 @@ export const isCustomAuthenticated: RequestHandler = async (req, res, next) => {
     return res.status(401).json({ message: "Unauthorized" });
   }
   
-  // Attach user to request
-  (req as any).user = { claims: { sub: user.id }, ...user };
+  // Attach JWT user info to request (not session-based)
+  (req as any).jwtUser = {
+    id: user.id,
+    email: user.email,
+    username: user.username,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    emailVerified: user.emailVerified,
+    profileImageUrl: user.profileImageUrl,
+  };
   next();
 };
