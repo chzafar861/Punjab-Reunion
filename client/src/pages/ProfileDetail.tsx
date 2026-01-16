@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useProfile } from "@/hooks/use-profiles";
 import { useAuth } from "@/hooks/use-auth";
 import { useSignedUrl } from "@/hooks/use-signed-url";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -49,6 +50,7 @@ export default function ProfileDetail() {
   const { data: profile, isLoading } = useProfile(id);
   const { toast } = useToast();
   const { user, isAuthenticated } = useAuth();
+  const { t } = useLanguage();
   
   // State for comment editing
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
@@ -93,14 +95,14 @@ export default function ProfileDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/profiles', id, 'comments'] });
       toast({
-        title: "Comment Posted",
-        description: "Your comment has been added.",
+        title: t("profile.commentPosted"),
+        description: t("profile.commentPostedDesc"),
       });
       form.reset();
     },
     onError: (err: Error) => {
       toast({
-        title: "Error",
+        title: t("profile.error"),
         description: err.message,
         variant: "destructive",
       });
@@ -113,15 +115,15 @@ export default function ProfileDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/profiles', id, 'comments'] });
       toast({
-        title: "Comment Updated",
-        description: "Your comment has been updated.",
+        title: t("profile.commentUpdated"),
+        description: t("profile.commentUpdatedDesc"),
       });
       setEditingCommentId(null);
       setEditingContent("");
     },
     onError: (err: Error) => {
       toast({
-        title: "Error",
+        title: t("profile.error"),
         description: err.message,
         variant: "destructive",
       });
@@ -134,14 +136,14 @@ export default function ProfileDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/profiles', id, 'comments'] });
       toast({
-        title: "Comment Deleted",
-        description: "Your comment has been removed.",
+        title: t("profile.commentDeleted"),
+        description: t("profile.commentDeletedDesc"),
       });
       setDeleteCommentId(null);
     },
     onError: (err: Error) => {
       toast({
-        title: "Error",
+        title: t("profile.error"),
         description: err.message,
         variant: "destructive",
       });
@@ -152,15 +154,15 @@ export default function ProfileDetail() {
     mutationFn: () => apiRequest("DELETE", `/api/profiles/${id}`),
     onSuccess: () => {
       toast({
-        title: "Profile Deleted",
-        description: "Your profile has been removed.",
+        title: t("profile.profileDeleted"),
+        description: t("profile.profileDeletedDesc"),
       });
       setDeleteProfileOpen(false);
       setLocation("/directory");
     },
     onError: (err: Error) => {
       toast({
-        title: "Error",
+        title: t("profile.error"),
         description: err.message,
         variant: "destructive",
       });
@@ -206,8 +208,8 @@ export default function ProfileDetail() {
       case "copy":
         navigator.clipboard.writeText(url);
         toast({
-          title: "Link Copied",
-          description: "Profile link has been copied to clipboard.",
+          title: t("profile.linkCopied"),
+          description: t("profile.linkCopiedDesc"),
         });
         return;
     }
@@ -228,8 +230,8 @@ export default function ProfileDetail() {
   if (!profile) {
     return (
       <div className="min-h-screen flex items-center justify-center flex-col gap-4">
-        <h2 className="text-2xl font-serif">Profile not found</h2>
-        <Button onClick={() => window.history.back()}>Go Back</Button>
+        <h2 className="text-2xl font-serif">{t("profile.notFound")}</h2>
+        <Button onClick={() => window.history.back()}>{t("profile.goBack")}</Button>
       </div>
     );
   }
@@ -248,7 +250,7 @@ export default function ProfileDetail() {
                   </span>
                   {profile.yearLeft && (
                     <span className="px-3 py-1 bg-secondary/10 text-secondary text-xs font-bold uppercase rounded-full tracking-wider">
-                      Since {profile.yearLeft}
+                      {t("profile.since")} {profile.yearLeft}
                     </span>
                   )}
                 </div>
@@ -260,7 +262,7 @@ export default function ProfileDetail() {
                       onClick={() => setLocation(`/my-profiles?edit=${id}`)}
                       data-testid="button-edit-profile"
                     >
-                      <Edit2 className="w-4 h-4 mr-1" /> Edit
+                      <Edit2 className="w-4 h-4 mr-1" /> {t("profile.edit")}
                     </Button>
                     <Button
                       variant="outline"
@@ -269,7 +271,7 @@ export default function ProfileDetail() {
                       onClick={() => setDeleteProfileOpen(true)}
                       data-testid="button-delete-profile"
                     >
-                      <Trash2 className="w-4 h-4 mr-1" /> Delete
+                      <Trash2 className="w-4 h-4 mr-1" /> {t("profile.delete")}
                     </Button>
                   </div>
                 )}
@@ -279,7 +281,7 @@ export default function ProfileDetail() {
               </h1>
               <p className="text-xl text-muted-foreground flex items-center gap-2">
                 <MapPin className="w-5 h-5 text-primary" /> 
-                Village {profile.villageName}
+                {t("profile.village")} {profile.villageName}
               </p>
             </div>
 
@@ -287,15 +289,15 @@ export default function ProfileDetail() {
               <div className="flex items-start gap-3">
                 <Globe className="w-5 h-5 text-primary mt-1" />
                 <div>
-                  <span className="block text-sm font-semibold text-secondary uppercase">Current Location</span>
-                  <span className="text-foreground">{profile.currentLocation || "Unknown"}</span>
+                  <span className="block text-sm font-semibold text-secondary uppercase">{t("profile.currentLocation")}</span>
+                  <span className="text-foreground">{profile.currentLocation || t("profile.unknown")}</span>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <Calendar className="w-5 h-5 text-primary mt-1" />
                 <div>
-                  <span className="block text-sm font-semibold text-secondary uppercase">Year of Migration</span>
-                  <span className="text-foreground">{profile.yearLeft || "Unknown"}</span>
+                  <span className="block text-sm font-semibold text-secondary uppercase">{t("profile.yearOfMigration")}</span>
+                  <span className="text-foreground">{profile.yearLeft || t("profile.unknown")}</span>
                 </div>
               </div>
             </div>
@@ -309,7 +311,7 @@ export default function ProfileDetail() {
           {/* Story Section */}
           <div className="p-8 md:p-12 space-y-8">
             <div className="prose prose-stone max-w-none">
-              <h3 className="font-serif text-2xl font-bold text-secondary">The Story</h3>
+              <h3 className="font-serif text-2xl font-bold text-secondary">{t("profile.theStory")}</h3>
               <p className="text-foreground/80 leading-relaxed whitespace-pre-wrap">
                 {profile.story}
               </p>
@@ -320,7 +322,7 @@ export default function ProfileDetail() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="lg" className="flex-1 rounded-full border-secondary text-secondary" data-testid="button-share-profile">
-                    <Share2 className="w-4 h-4 mr-2" /> Share Profile
+                    <Share2 className="w-4 h-4 mr-2" /> {t("profile.shareProfile")}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="center" className="w-48">
@@ -331,7 +333,7 @@ export default function ProfileDetail() {
                     <Twitter className="w-4 h-4 mr-2" /> Twitter
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => handleShare("copy")} data-testid="share-copy-link">
-                    <LinkIcon className="w-4 h-4 mr-2" /> Copy Link
+                    <LinkIcon className="w-4 h-4 mr-2" /> {t("profile.copyLink")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -342,7 +344,7 @@ export default function ProfileDetail() {
           <div className="p-8 md:p-12 border-t border-border bg-muted/20">
             <div className="max-w-3xl mx-auto">
               <h3 className="font-serif text-2xl font-bold text-secondary mb-6 flex items-center gap-2">
-                <MessageCircle className="w-6 h-6" /> Comments
+                <MessageCircle className="w-6 h-6" /> {t("profile.comments")}
               </h3>
 
               {/* Comment Form */}
@@ -356,16 +358,16 @@ export default function ProfileDetail() {
                     </Avatar>
                     <div>
                       <p className="font-semibold text-foreground">{displayName}</p>
-                      <p className="text-xs text-muted-foreground">Commenting as logged in user</p>
+                      <p className="text-xs text-muted-foreground">{t("profile.commentingAsLoggedIn")}</p>
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <Label htmlFor="authorName">Your Name <span className="text-destructive">*</span></Label>
+                    <Label htmlFor="authorName">{t("profile.yourName")} <span className="text-destructive">*</span></Label>
                     <Input 
                       id="authorName" 
                       data-testid="input-comment-author"
-                      placeholder="Enter your name"
+                      placeholder={t("profile.enterYourName")}
                       {...form.register("authorName")} 
                       className="bg-muted/30"
                     />
@@ -375,11 +377,11 @@ export default function ProfileDetail() {
                   </div>
                 )}
                 <div className="space-y-2">
-                  <Label htmlFor="content">Comment <span className="text-destructive">*</span></Label>
+                  <Label htmlFor="content">{t("profile.comment")} <span className="text-destructive">*</span></Label>
                   <Textarea 
                     id="content" 
                     data-testid="input-comment-content"
-                    placeholder="Share your thoughts, memories, or connections to this family..."
+                    placeholder={t("profile.commentPlaceholder")}
                     rows={4}
                     {...form.register("content")} 
                     className="bg-muted/30 resize-y"
@@ -396,11 +398,11 @@ export default function ProfileDetail() {
                 >
                   {createComment.isPending ? (
                     <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Posting...
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t("profile.posting")}
                     </>
                   ) : (
                     <>
-                      <Send className="w-4 h-4 mr-2" /> Post Comment
+                      <Send className="w-4 h-4 mr-2" /> {t("profile.postComment")}
                     </>
                   )}
                 </Button>
@@ -413,7 +415,7 @@ export default function ProfileDetail() {
                 </div>
               ) : comments.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
-                  No comments yet. Be the first to share your thoughts!
+                  {t("profile.noComments")}
                 </p>
               ) : (
                 <div className="space-y-6">
@@ -454,14 +456,14 @@ export default function ProfileDetail() {
                                       }}
                                       data-testid={`button-edit-comment-${comment.id}`}
                                     >
-                                      <Edit2 className="w-4 h-4 mr-2" /> Edit
+                                      <Edit2 className="w-4 h-4 mr-2" /> {t("profile.editComment")}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem 
                                       onClick={() => setDeleteCommentId(comment.id)}
                                       className="text-destructive focus:text-destructive"
                                       data-testid={`button-delete-comment-${comment.id}`}
                                     >
-                                      <Trash2 className="w-4 h-4 mr-2" /> Delete
+                                      <Trash2 className="w-4 h-4 mr-2" /> {t("profile.deleteComment")}
                                     </DropdownMenuItem>
                                   </DropdownMenuContent>
                                 </DropdownMenu>
@@ -488,7 +490,7 @@ export default function ProfileDetail() {
                                     ) : (
                                       <Check className="w-4 h-4 mr-1" />
                                     )}
-                                    Save
+                                    {t("profile.save")}
                                   </Button>
                                   <Button
                                     size="sm"
@@ -499,7 +501,7 @@ export default function ProfileDetail() {
                                     }}
                                     data-testid={`button-cancel-edit-${comment.id}`}
                                   >
-                                    <X className="w-4 h-4 mr-1" /> Cancel
+                                    <X className="w-4 h-4 mr-1" /> {t("profile.cancel")}
                                   </Button>
                                 </div>
                               </div>
@@ -522,13 +524,13 @@ export default function ProfileDetail() {
       <AlertDialog open={deleteCommentId !== null} onOpenChange={(open) => !open && setDeleteCommentId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Comment</AlertDialogTitle>
+            <AlertDialogTitle>{t("profile.deleteCommentTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this comment? This action cannot be undone.
+              {t("profile.deleteCommentDesc")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-delete-comment">Cancel</AlertDialogCancel>
+            <AlertDialogCancel data-testid="button-cancel-delete-comment">{t("profile.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteCommentId && deleteComment.mutate(deleteCommentId)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -537,7 +539,7 @@ export default function ProfileDetail() {
               {deleteComment.isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />
               ) : null}
-              Delete
+              {t("profile.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -547,13 +549,13 @@ export default function ProfileDetail() {
       <AlertDialog open={deleteProfileOpen} onOpenChange={setDeleteProfileOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Profile</AlertDialogTitle>
+            <AlertDialogTitle>{t("profile.deleteProfileTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this heritage profile? This will permanently remove all the information and cannot be undone.
+              {t("profile.deleteProfileDesc")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-delete-profile">Cancel</AlertDialogCancel>
+            <AlertDialogCancel data-testid="button-cancel-delete-profile">{t("profile.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteProfile.mutate()}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
@@ -562,7 +564,7 @@ export default function ProfileDetail() {
               {deleteProfile.isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />
               ) : null}
-              Delete Profile
+              {t("profile.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
