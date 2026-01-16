@@ -156,6 +156,9 @@ export default function MyProfiles() {
                     )}
                     <CardDescription>
                       {profile.villageName}, {profile.district}
+                      {profile.yearLeft && (
+                        <span className="ml-2">• {t("myProfiles.leftIn")} {profile.yearLeft}</span>
+                      )}
                     </CardDescription>
                   </div>
                   <div className="flex gap-2">
