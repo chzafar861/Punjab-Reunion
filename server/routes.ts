@@ -204,14 +204,51 @@ export async function registerRoutes(
     }
   });
 
-  // Protected: Delete profile (only owner can delete)
+  // Protected: Delete profile (only owner can delete) - also deletes photo from storage
   app.delete("/api/profiles/:id", requireSupabaseUser, async (req: any, res) => {
     const userId = req.supabaseUser?.id;
     const profileId = Number(req.params.id);
+    
+    // First get the profile to retrieve the photo URL for cleanup
+    const profile = await storage.getProfile(profileId);
+    
     const deleted = await storage.deleteProfile(profileId, userId);
     if (!deleted) {
       return res.status(403).json({ message: "Not authorized to delete this profile" });
     }
+    
+    // If profile had a photo, delete it from Supabase storage
+    if (profile?.photoUrl) {
+      try {
+        const { supabaseAdmin } = await import("./lib/supabase");
+        // Extract file path from the photo URL
+        const bucket = "profile-photos";
+        let filePath: string | null = null;
+        
+        try {
+          const url = new URL(profile.photoUrl);
+          const regex = new RegExp(`/${bucket}/(.+)$`);
+          const match = url.pathname.match(regex);
+          if (match) filePath = match[1];
+          if (!filePath) {
+            const storageMatch = profile.photoUrl.match(new RegExp(`${bucket}/([^?]+)`));
+            filePath = storageMatch ? storageMatch[1] : null;
+          }
+        } catch {
+          const match = profile.photoUrl.match(new RegExp(`${bucket}/([^?]+)`));
+          filePath = match ? match[1] : null;
+        }
+        
+        if (filePath) {
+          await supabaseAdmin.storage.from(bucket).remove([filePath]);
+          console.log(`Deleted photo ${filePath} for profile ${profileId}`);
+        }
+      } catch (err) {
+        // Log but don't fail the request - profile is already deleted
+        console.error(`Failed to delete photo for profile ${profileId}:`, err);
+      }
+    }
+    
     res.json({ success: true });
   });
 

@@ -38,11 +38,24 @@ Deployment target: Vercel with Supabase database
 
 ### Photo URL Handling
 Profile photos support multiple URL formats:
-- **Replit Object Storage**: Full URLs containing `/objects/` path (e.g., `https://app.repl.co/objects/uploads/...`)
+- **Supabase Storage**: Primary storage via `profile-photos` bucket in Supabase Storage
 - **External URLs**: Direct URLs to external images (e.g., Unsplash)
-- **Legacy Supabase**: URLs containing `supabase` (attempts signed URL, falls back to placeholder if file not found)
+- **Replit Object Storage**: Legacy URLs containing `/objects/` path
 
-Photo upload flow uses two-step presigned URL process via `/api/uploads/request-url` endpoint.
+**Profile Photo Management (MyProfiles Edit Form)**:
+- Uses session token system (`editSessionTokenRef`) to prevent race conditions
+- Token captured in closure before upload, compared after upload completes
+- Stale uploads (from cancelled/saved sessions) are automatically deleted
+- `uploadedPhotos[]` array tracks all uploads during edit session for orphan cleanup
+- All photo controls disabled during save to prevent concurrent modifications
+- On save failure: form state reverts to original photo, all uploads cleaned up
+
+**Photo Upload Flow**:
+1. `handleFileChange` captures session token before starting upload
+2. After upload: compares captured token vs current token
+3. If mismatch: upload is stale → delete from storage and exit
+4. If match: update form state and add to uploadedPhotos array
+5. On save: delete old photo (if changed) and orphaned uploads (not the saved one)
 
 ### Authentication Flow
 - Frontend uses @supabase/supabase-js for signup/login/logout

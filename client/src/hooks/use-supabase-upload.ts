@@ -14,8 +14,24 @@ interface UseSupabaseUploadOptions {
   onError?: (error: Error) => void;
 }
 
+export function extractFilePathFromUrl(photoUrl: string, bucket: string = "profile-photos"): string | null {
+  if (!photoUrl) return null;
+  try {
+    const url = new URL(photoUrl);
+    const regex = new RegExp(`/${bucket}/(.+)$`);
+    const match = url.pathname.match(regex);
+    if (match) return match[1];
+    const storageMatch = photoUrl.match(new RegExp(`${bucket}/([^?]+)`));
+    return storageMatch ? storageMatch[1] : null;
+  } catch {
+    const match = photoUrl.match(new RegExp(`${bucket}/([^?]+)`));
+    return match ? match[1] : null;
+  }
+}
+
 export function useSupabaseUpload(options: UseSupabaseUploadOptions = {}) {
   const [isUploading, setIsUploading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [progress, setProgress] = useState(0);
 
@@ -73,9 +89,42 @@ export function useSupabaseUpload(options: UseSupabaseUploadOptions = {}) {
     [bucket, folder, options]
   );
 
+  const deleteFile = useCallback(
+    async (photoUrl: string): Promise<boolean> => {
+      setIsDeleting(true);
+      setError(null);
+
+      try {
+        const filePath = extractFilePathFromUrl(photoUrl, bucket);
+        if (!filePath) {
+          throw new Error("Could not extract file path from URL");
+        }
+
+        const { error: deleteError } = await supabase.storage
+          .from(bucket)
+          .remove([filePath]);
+
+        if (deleteError) {
+          throw new Error(deleteError.message);
+        }
+
+        return true;
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error("Delete failed");
+        setError(error);
+        return false;
+      } finally {
+        setIsDeleting(false);
+      }
+    },
+    [bucket]
+  );
+
   return {
     uploadFile,
+    deleteFile,
     isUploading,
+    isDeleting,
     error,
     progress,
   };

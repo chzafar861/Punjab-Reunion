@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
@@ -8,10 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Loader2, Edit, Trash2, Plus, Save, X } from "lucide-react";
+import { Loader2, Edit, Trash2, Plus, Save, X, Upload, Image as ImageIcon } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import type { Profile } from "@shared/schema";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useSupabaseUpload } from "@/hooks/use-supabase-upload";
+import { useSignedUrl } from "@/hooks/use-signed-url";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +26,18 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
+function ProfilePhotoDisplay({ photoUrl }: { photoUrl: string | null | undefined }) {
+  const signedUrl = useSignedUrl(photoUrl);
+  if (!signedUrl) return null;
+  return (
+    <img 
+      src={signedUrl} 
+      alt="Profile" 
+      className="w-20 h-20 object-cover rounded-md border"
+    />
+  );
+}
+
 export default function MyProfiles() {
   const { t } = useLanguage();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -31,7 +45,26 @@ export default function MyProfiles() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [editForm, setEditForm] = useState<Partial<Profile>>({});
+  const [editForm, setEditForm] = useState<Partial<Profile & { photoUrl?: string | null }>>({});
+  const [originalPhotoUrl, setOriginalPhotoUrl] = useState<string | null>(null);
+  const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  // Session token to distinguish between edit sessions - prevents stale upload callbacks
+  // from leaking into new edit sessions. Incremented on start/cancel/save.
+  const editSessionTokenRef = useRef<number>(0);
+  
+  const { uploadFile, deleteFile, isUploading } = useSupabaseUpload({
+    bucket: "profile-photos",
+    folder: "uploads",
+    // Note: Session-aware logic is handled in handleFileChange, not here
+    onError: (error) => {
+      toast({
+        title: t("toast.uploadFailed"),
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -52,18 +85,68 @@ export default function MyProfiles() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: Partial<Profile> }) => {
+    mutationFn: async ({ id, data, oldPhotoToDelete, orphanedPhotos }: { 
+      id: number; 
+      data: Partial<Profile>; 
+      oldPhotoToDelete?: string | null;
+      orphanedPhotos: string[];
+    }) => {
       const response = await apiRequest("PUT", `/api/profiles/${id}`, data);
-      return response.json();
+      const result = await response.json();
+      return { result, oldPhotoToDelete, orphanedPhotos };
     },
-    onSuccess: () => {
+    onSuccess: async ({ oldPhotoToDelete, orphanedPhotos }) => {
+      // Increment session token to invalidate any in-flight uploads from this session
+      editSessionTokenRef.current += 1;
+      // Delete old photo from storage AFTER successful save
+      if (oldPhotoToDelete) {
+        try {
+          await deleteFile(oldPhotoToDelete);
+        } catch (err) {
+          console.error("Failed to delete old photo:", err);
+        }
+      }
+      // Delete orphaned photos (uploaded during session but not used)
+      for (const orphan of orphanedPhotos) {
+        try {
+          await deleteFile(orphan);
+        } catch (err) {
+          console.error("Failed to delete orphaned photo:", err);
+        }
+      }
       queryClient.invalidateQueries({ queryKey: ["/api/my-profiles"] });
       queryClient.invalidateQueries({ queryKey: ["/api/profiles"] });
       setEditingId(null);
+      setOriginalPhotoUrl(null);
+      setUploadedPhotos([]);
       toast({ title: t("myProfiles.profileUpdated"), description: t("myProfiles.profileUpdatedDesc") });
     },
-    onError: (error: Error) => {
-      toast({ title: t("myProfiles.updateFailed"), description: error.message, variant: "destructive" });
+    onError: async (error: Error, variables) => {
+      // On save failure, clean up any uploaded photos to avoid orphans
+      for (const orphan of variables.orphanedPhotos) {
+        try {
+          await deleteFile(orphan);
+        } catch (err) {
+          console.error("Failed to delete orphaned photo on error:", err);
+        }
+      }
+      // Also delete the photo we just uploaded that was supposed to be saved
+      const newPhotoUrl = variables.data.photoUrl;
+      if (newPhotoUrl && newPhotoUrl !== originalPhotoUrl) {
+        try {
+          await deleteFile(newPhotoUrl);
+        } catch (err) {
+          console.error("Failed to delete new photo on error:", err);
+        }
+      }
+      // Revert form state to original photo to prevent submitting deleted URL
+      setEditForm(prev => ({ ...prev, photoUrl: originalPhotoUrl }));
+      setUploadedPhotos([]);
+      toast({ 
+        title: t("myProfiles.updateFailed"), 
+        description: error.message, 
+        variant: "destructive" 
+      });
     },
   });
 
@@ -82,7 +165,11 @@ export default function MyProfiles() {
   });
 
   const startEditing = (profile: Profile) => {
+    // Increment session token to invalidate any pending uploads from previous sessions
+    editSessionTokenRef.current += 1;
     setEditingId(profile.id);
+    setOriginalPhotoUrl(profile.photoUrl || null);
+    setUploadedPhotos([]);
     setEditForm({
       fullName: profile.fullName,
       villageName: profile.villageName,
@@ -90,16 +177,97 @@ export default function MyProfiles() {
       yearLeft: profile.yearLeft,
       currentLocation: profile.currentLocation,
       story: profile.story,
+      photoUrl: profile.photoUrl,
     });
   };
 
-  const cancelEditing = () => {
+  const cancelEditing = async () => {
+    // Increment session token FIRST to invalidate any in-flight uploads
+    editSessionTokenRef.current += 1;
+    // If user uploaded photos during this session but cancelled, delete them to avoid orphans
+    for (const orphan of uploadedPhotos) {
+      try {
+        await deleteFile(orphan);
+      } catch (err) {
+        console.error("Failed to delete orphaned photo:", err);
+      }
+    }
     setEditingId(null);
     setEditForm({});
+    setOriginalPhotoUrl(null);
+    setUploadedPhotos([]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
   };
 
   const saveEdit = (id: number) => {
-    updateMutation.mutate({ id, data: editForm });
+    const newPhotoUrl = editForm.photoUrl || null;
+    
+    // Determine if the original photo needs to be deleted (changed to different or removed)
+    const oldPhotoToDelete = (originalPhotoUrl && originalPhotoUrl !== newPhotoUrl) 
+      ? originalPhotoUrl 
+      : null;
+    
+    // Determine which uploaded photos are orphans (not the one being saved)
+    const orphanedPhotos = uploadedPhotos.filter(url => url !== newPhotoUrl);
+    
+    updateMutation.mutate({ id, data: editForm, oldPhotoToDelete, orphanedPhotos });
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith("image/")) {
+      toast({
+        title: t("toast.invalidFileType"),
+        description: t("toast.pleaseSelectImage"),
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Capture the session token in a closure BEFORE starting upload
+    // This ensures we compare against the exact session when upload was initiated
+    const uploadSessionToken = editSessionTokenRef.current;
+    
+    const response = await uploadFile(file);
+    
+    if (!response) {
+      // Upload failed - error already shown by onError callback
+      return;
+    }
+    
+    // Check if the session has changed since upload started
+    if (uploadSessionToken !== editSessionTokenRef.current) {
+      // Session changed (user cancelled and possibly started new edit)
+      // Delete this orphaned upload
+      try {
+        await deleteFile(response.publicUrl);
+      } catch (err) {
+        console.error("Failed to cleanup stale session upload:", err);
+      }
+      return;
+    }
+    
+    // Session is still valid - update form state
+    setEditForm(prev => ({ ...prev, photoUrl: response.publicUrl }));
+    setUploadedPhotos(prev => [...prev, response.publicUrl]);
+    toast({
+      title: t("toast.uploadSuccess"),
+      description: t("toast.uploadSuccessDesc"),
+    });
+  };
+
+  const handleDeletePhoto = () => {
+    // Just clear the photo URL from the form - actual storage deletion happens on save
+    // This ensures data consistency: if user cancels, the original photo remains intact
+    setEditForm(prev => ({ ...prev, photoUrl: null }));
+    toast({
+      title: t("myProfiles.photoDeleted"),
+      description: t("myProfiles.photoDeletedDesc"),
+    });
   };
 
   if (authLoading) {
@@ -255,6 +423,90 @@ export default function MyProfiles() {
                           className="min-h-[100px]"
                           data-testid="input-edit-story"
                         />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>{t("myProfiles.profilePhoto")}</Label>
+                        <div className="flex items-center gap-4 flex-wrap">
+                          {editForm.photoUrl ? (
+                            <div className="flex items-center gap-4">
+                              <ProfilePhotoDisplay photoUrl={editForm.photoUrl} />
+                              <div className="flex flex-col gap-2">
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button 
+                                      variant="destructive" 
+                                      size="sm"
+                                      disabled={updateMutation.isPending}
+                                      data-testid="button-delete-photo"
+                                    >
+                                      <Trash2 className="h-4 w-4 mr-2" />
+                                      {t("myProfiles.deletePhoto")}
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>{t("myProfiles.deletePhotoTitle")}</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        {t("myProfiles.deletePhotoDescription")}
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={handleDeletePhoto}
+                                        className="bg-destructive text-destructive-foreground"
+                                      >
+                                        {t("common.delete")}
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => fileInputRef.current?.click()}
+                                  disabled={isUploading || updateMutation.isPending}
+                                  data-testid="button-change-photo"
+                                >
+                                  {isUploading ? (
+                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                  ) : (
+                                    <Upload className="h-4 w-4 mr-2" />
+                                  )}
+                                  {t("myProfiles.changePhoto")}
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-4">
+                              <div className="w-20 h-20 bg-muted rounded-md border flex items-center justify-center">
+                                <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={isUploading || updateMutation.isPending}
+                                data-testid="button-upload-photo"
+                              >
+                                {isUploading ? (
+                                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                ) : (
+                                  <Upload className="h-4 w-4 mr-2" />
+                                )}
+                                {t("myProfiles.uploadPhoto")}
+                              </Button>
+                            </div>
+                          )}
+                          <input
+                            type="file"
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
+                            accept="image/*"
+                            className="hidden"
+                            data-testid="input-photo-file"
+                          />
+                        </div>
                       </div>
                     </div>
                   ) : (
