@@ -104,6 +104,7 @@ export default function Signup() {
       });
 
       if (error) {
+        console.error('Supabase signup error:', error.message, error.status, error);
         toast({
           title: "Signup failed",
           description: error.message || "An error occurred during signup",
