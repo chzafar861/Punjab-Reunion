@@ -13,7 +13,7 @@ function getJwtSecret(): string {
 }
 
 export interface JWTPayload {
-  userId: number;
+  userId: string;
   email: string;
   username: string | null;
 }

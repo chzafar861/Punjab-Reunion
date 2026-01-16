@@ -6,7 +6,7 @@ declare global {
   namespace Express {
     interface Request {
       jwtUser?: {
-        id: number;
+        id: string;
         email: string;
         username: string | null;
         firstName: string | null;
@@ -47,7 +47,7 @@ export const requireJWTAuth: RequestHandler = async (req, res, next) => {
       username: user.username,
       firstName: user.firstName,
       lastName: user.lastName,
-      emailVerified: user.emailVerified,
+      emailVerified: user.emailVerified ?? false,
       profileImageUrl: user.profileImageUrl,
     };
 
@@ -84,7 +84,7 @@ export const optionalJWTAuth: RequestHandler = async (req, res, next) => {
         username: user.username,
         firstName: user.firstName,
         lastName: user.lastName,
-        emailVerified: user.emailVerified,
+        emailVerified: user.emailVerified ?? false,
         profileImageUrl: user.profileImageUrl,
       };
     }
