@@ -158,6 +158,12 @@ export default function Login() {
                 t("auth.login")
               )}
             </Button>
+
+            <div className="text-right">
+              <Link href="/forgot-password" className="text-sm text-primary hover:underline" data-testid="link-forgot-password">
+                {t("auth.forgotPassword")}
+              </Link>
+            </div>
           </form>
 
           <p className="text-center text-sm text-muted-foreground">
