@@ -177,7 +177,9 @@ export async function registerRoutes(
   // Protected: Get current user's profiles (includes private fields since it's their own data)
   app.get("/api/my-profiles", requireSupabaseUser, async (req: any, res) => {
     const userId = req.supabaseUser?.id;
+    console.log("[my-profiles] User ID from token:", userId);
     const userProfiles = await storage.getProfilesByUserId(userId);
+    console.log("[my-profiles] Found profiles:", userProfiles.length);
     // Return profiles with all fields since it's the user's own data
     res.json(userProfiles);
   });
