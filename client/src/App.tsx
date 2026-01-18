@@ -25,6 +25,15 @@ import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
 import NotFound from "@/pages/not-found";
 
+// Shop pages
+import Shop from "@/pages/Shop";
+import ProductDetail from "@/pages/ProductDetail";
+
+// Admin pages
+import AdminProducts from "@/pages/AdminProducts";
+import AdminOrders from "@/pages/AdminOrders";
+import AdminUsers from "@/pages/AdminUsers";
+
 // Helper layout
 function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -55,6 +64,11 @@ function Router() {
         <Route path="/verify-email" component={VerifyEmail} />
         <Route path="/forgot-password" component={ForgotPassword} />
         <Route path="/reset-password" component={ResetPassword} />
+        <Route path="/shop" component={Shop} />
+        <Route path="/shop/:id" component={ProductDetail} />
+        <Route path="/admin/products" component={AdminProducts} />
+        <Route path="/admin/orders" component={AdminOrders} />
+        <Route path="/admin/users" component={AdminUsers} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
