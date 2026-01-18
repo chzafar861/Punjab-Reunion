@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ShoppingCart, Eye, Package } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ShoppingCart, Eye, Package, Loader2 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -25,9 +25,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/use-auth";
+import { useLocation } from "wouter";
 import type { Order, OrderItem } from "@shared/schema";
 
 type OrderWithItems = Order & { items?: OrderItem[] };
@@ -45,6 +47,44 @@ export default function AdminOrders() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
+  const { user, isLoading: authLoading } = useAuth();
+  const [, setLocation] = useLocation();
+  
+  const isAdmin = user?.role === "admin";
+
+  useEffect(() => {
+    if (!authLoading && !isAdmin) {
+      toast({
+        title: "Access Denied",
+        description: "You need administrator privileges to access this page.",
+        variant: "destructive",
+      });
+      setLocation("/");
+    }
+  }, [authLoading, isAdmin, toast, setLocation]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle>Access Denied</CardTitle>
+            <CardDescription>
+              You need administrator privileges to access this page.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
   const { data: orders, isLoading, error } = useQuery<Order[]>({
     queryKey: ["/api/admin/orders"],

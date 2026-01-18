@@ -1,7 +1,11 @@
 import { Link } from "wouter";
 import { Heart } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 export function Footer() {
+  const { user } = useAuth();
+  const canSubmitProfiles = user?.role === "admin" || user?.canSubmitProfiles === true;
+
   return (
     <footer className="bg-secondary text-secondary-foreground py-12 border-t border-primary/20 mt-auto">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -20,7 +24,10 @@ export function Footer() {
             <h4 className="font-serif text-lg font-semibold text-primary">Explore</h4>
             <ul className="space-y-2">
               <li><Link href="/directory" className="hover:text-primary transition-colors">Browse Directory</Link></li>
-              <li><Link href="/submit" className="hover:text-primary transition-colors">Submit a Profile</Link></li>
+              <li><Link href="/shop" className="hover:text-primary transition-colors">Heritage Shop</Link></li>
+              {canSubmitProfiles && (
+                <li><Link href="/submit" className="hover:text-primary transition-colors">Submit a Profile</Link></li>
+              )}
               <li><Link href="/contact" className="hover:text-primary transition-colors">Contact Us</Link></li>
             </ul>
           </div>

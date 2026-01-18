@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
-import { Users, Shield, UserCheck, UserX, Search } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import { Users, Shield, UserCheck, UserX, Search, Loader2 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -32,6 +32,8 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/use-auth";
+import { useLocation } from "wouter";
 import type { UserRoleRecord } from "@shared/schema";
 
 const roleColors: Record<string, "default" | "secondary" | "outline"> = {
@@ -51,6 +53,44 @@ export default function AdminUsers() {
     canSubmitProfiles: false,
     canManageProducts: false,
   });
+  const { user, isLoading: authLoading } = useAuth();
+  const [, setLocation] = useLocation();
+  
+  const isAdmin = user?.role === "admin";
+
+  useEffect(() => {
+    if (!authLoading && !isAdmin) {
+      toast({
+        title: "Access Denied",
+        description: "You need administrator privileges to access this page.",
+        variant: "destructive",
+      });
+      setLocation("/");
+    }
+  }, [authLoading, isAdmin, toast, setLocation]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle>Access Denied</CardTitle>
+            <CardDescription>
+              You need administrator privileges to access this page.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
   const { data: users, isLoading, error } = useQuery<UserRoleRecord[]>({
     queryKey: ["/api/admin/users"],

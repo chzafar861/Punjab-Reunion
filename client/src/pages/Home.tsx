@@ -7,6 +7,7 @@ import { ProfileCard } from "@/components/ProfileCard";
 import { Button } from "@/components/ui/button";
 import { useSEO } from "@/hooks/use-seo";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAuth } from "@/hooks/use-auth";
 import heroCover from "@assets/generated_images/47dapunjab_heritage_cover_banner.png";
 
 export default function Home() {
@@ -14,6 +15,9 @@ export default function Home() {
   const [, setLocation] = useLocation();
   const { data: profiles, isLoading } = useProfiles();
   const { t } = useLanguage();
+  const { user } = useAuth();
+  
+  const canSubmitProfiles = user?.role === "admin" || user?.canSubmitProfiles === true;
 
   useSEO({
     title: "Punjabi Ancestral Roots |Reconnecting RootsAcross Borders",
@@ -165,14 +169,25 @@ export default function Home() {
           <p className="text-xl text-white/80 max-w-2xl mx-auto mb-10">
             {t("home.cta.subtitle")}
           </p>
-          <Button 
-            size="lg" 
-            className="bg-primary hover:bg-primary/90 text-white rounded-full shadow-xl shadow-black/20"
-            onClick={() => setLocation("/submit")}
-            data-testid="button-submit-profile-cta"
-          >
-            {t("nav.submit")}
-          </Button>
+          {canSubmitProfiles ? (
+            <Button 
+              size="lg" 
+              className="bg-primary hover:bg-primary/90 text-white rounded-full shadow-xl shadow-black/20"
+              onClick={() => setLocation("/submit")}
+              data-testid="button-submit-profile-cta"
+            >
+              {t("nav.submit")}
+            </Button>
+          ) : (
+            <Button 
+              size="lg" 
+              className="bg-primary hover:bg-primary/90 text-white rounded-full shadow-xl shadow-black/20"
+              onClick={() => setLocation("/directory")}
+              data-testid="button-explore-directory-cta"
+            >
+              {t("home.featured.viewDirectory")}
+            </Button>
+          )}
         </div>
       </section>
     </main>
