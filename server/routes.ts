@@ -34,6 +34,38 @@ export async function registerRoutes(
       canManageProducts: userRole?.canManageProducts || false,
     });
   });
+  
+  // One-time setup: Make the current logged-in user an admin
+  // This route is protected and only works if there are no admins yet OR if user is already admin
+  app.post("/api/auth/setup-admin", requireSupabaseUser, async (req: any, res) => {
+    const userId = req.supabaseUser?.id;
+    
+    try {
+      // Check if user is already admin or if there are no admins
+      const existingRole = await storage.getUserRole(userId);
+      const allRoles = await storage.getAllUserRoles();
+      const existingAdmins = allRoles.filter(r => r.role === "admin");
+      
+      // Allow if: no admins exist OR user is already admin
+      if (existingAdmins.length === 0 || existingRole?.role === "admin") {
+        const userRole = await storage.setUserRole(userId, "admin", true, true);
+        console.log(`[setup-admin] User ${userId} set as admin`);
+        res.json({ 
+          success: true, 
+          message: "You are now an admin",
+          role: userRole 
+        });
+      } else {
+        res.status(403).json({ 
+          success: false, 
+          message: "Admin already exists. Contact existing admin to grant permissions." 
+        });
+      }
+    } catch (error: any) {
+      console.error("[setup-admin] Error:", error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
 
   // Check if username is available (for signup validation)
   app.get("/api/auth/check-username/:username", async (req, res) => {
