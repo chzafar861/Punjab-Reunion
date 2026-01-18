@@ -44,8 +44,11 @@ export default function SubmitProfile() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const createProfile = useCreateProfile();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [uploadedFileName, setUploadedFileName] = useState<string>("");
+
+  // Check if user can submit profiles (admin or has canSubmitProfiles permission)
+  const canSubmit = user?.role === "admin" || user?.canSubmitProfiles === true;
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileFormSchema),
@@ -81,7 +84,7 @@ export default function SubmitProfile() {
     },
   });
 
-  // Redirect to login if not authenticated
+  // Redirect to login if not authenticated, or show error if no permission
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
       toast({
@@ -92,8 +95,17 @@ export default function SubmitProfile() {
       setTimeout(() => {
         setLocation("/login");
       }, 500);
+    } else if (!authLoading && isAuthenticated && !canSubmit) {
+      toast({
+        title: "Permission Required",
+        description: "You don't have permission to submit profiles. Please contact an administrator to request access.",
+        variant: "destructive",
+      });
+      setTimeout(() => {
+        setLocation("/");
+      }, 500);
     }
-  }, [authLoading, isAuthenticated, toast, setLocation, t]);
+  }, [authLoading, isAuthenticated, canSubmit, toast, setLocation, t]);
 
   // Show loading while checking auth
   if (authLoading) {
@@ -109,6 +121,22 @@ export default function SubmitProfile() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <p className="text-muted-foreground">{t("auth.redirecting")}</p>
+      </div>
+    );
+  }
+
+  // Don't render form if user doesn't have permission
+  if (!canSubmit) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle>Permission Required</CardTitle>
+            <CardDescription>
+              You don't have permission to submit profiles. Please contact an administrator to request access.
+            </CardDescription>
+          </CardHeader>
+        </Card>
       </div>
     );
   }

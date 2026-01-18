@@ -152,10 +152,21 @@ export async function registerRoutes(
     res.json(publicProfile);
   });
 
-  // Protected: Create profile (requires login)
+  // Protected: Create profile (requires login and submission permission)
   app.post(api.profiles.create.path, requireSupabaseUser, async (req: any, res) => {
     try {
       const userId = req.supabaseUser?.id;
+      
+      // Check if user has permission to submit profiles
+      const userRole = await storage.getUserRole(userId);
+      const canSubmit = userRole?.role === "admin" || userRole?.canSubmitProfiles === true;
+      
+      if (!canSubmit) {
+        return res.status(403).json({ 
+          message: "You don't have permission to submit profiles. Please contact an administrator." 
+        });
+      }
+      
       const input = api.profiles.create.input.parse(req.body);
       const profile = await storage.createProfile({ ...input, userId });
       const publicProfile = {

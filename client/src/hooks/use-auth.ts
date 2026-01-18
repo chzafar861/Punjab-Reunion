@@ -88,16 +88,8 @@ export function useAuth() {
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        const metadata = session.user.user_metadata || {};
-        queryClient.setQueryData(["supabase-auth"], {
-          id: session.user.id,
-          email: session.user.email || null,
-          username: metadata.username || null,
-          firstName: metadata.first_name || metadata.firstName || null,
-          lastName: metadata.last_name || metadata.lastName || null,
-          emailVerified: session.user.email_confirmed_at ? true : false,
-          profileImageUrl: metadata.avatar_url || metadata.profileImageUrl || null,
-        });
+        // Refetch user data to include role information from API
+        queryClient.invalidateQueries({ queryKey: ["supabase-auth"] });
       } else {
         queryClient.setQueryData(["supabase-auth"], null);
       }

@@ -30,6 +30,7 @@ export function Navigation() {
   ];
   
   const isAdmin = user?.role === "admin";
+  const canSubmitProfiles = isAdmin || user?.canSubmitProfiles === true;
 
   return (
     <header className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-md border-b border-border/50">
@@ -62,12 +63,14 @@ export function Navigation() {
             ))}
             {isLoading ? null : isAuthenticated ? (
               <>
-                <Link href="/submit">
-                  <Button variant="default" size="sm" className="gap-1" data-testid="button-submit-profile">
-                    <PlusCircle className="h-4 w-4" />
-                    {t("nav.submit")}
-                  </Button>
-                </Link>
+                {canSubmitProfiles && (
+                  <Link href="/submit">
+                    <Button variant="default" size="sm" className="gap-1" data-testid="button-submit-profile">
+                      <PlusCircle className="h-4 w-4" />
+                      {t("nav.submit")}
+                    </Button>
+                  </Link>
+                )}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="flex items-center gap-2" data-testid="button-user-menu">
@@ -178,16 +181,18 @@ export function Navigation() {
               ))}
               {isAuthenticated && (
                 <>
-                  <Link 
-                    href="/submit"
-                    className={`text-lg font-medium py-2 ${
-                      location === "/submit" ? "text-primary" : "text-secondary"
-                    }`}
-                    onClick={() => setIsOpen(false)}
-                    data-testid="link-nav-mobile-submit"
-                  >
-                    {t("nav.submit")}
-                  </Link>
+                  {canSubmitProfiles && (
+                    <Link 
+                      href="/submit"
+                      className={`text-lg font-medium py-2 ${
+                        location === "/submit" ? "text-primary" : "text-secondary"
+                      }`}
+                      onClick={() => setIsOpen(false)}
+                      data-testid="link-nav-mobile-submit"
+                    >
+                      {t("nav.submit")}
+                    </Link>
+                  )}
                   <Link 
                     href="/my-profiles"
                     className={`text-lg font-medium py-2 ${
