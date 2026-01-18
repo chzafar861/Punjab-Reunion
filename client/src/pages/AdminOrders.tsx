@@ -52,6 +52,35 @@ export default function AdminOrders() {
   
   const isAdmin = user?.role === "admin";
 
+  const { data: orders, isLoading, error } = useQuery<Order[]>({
+    queryKey: ["/api/admin/orders"],
+    enabled: isAdmin,
+  });
+
+  const updateStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: number; status: string }) => {
+      const response = await apiRequest("PUT", `/api/admin/orders/${id}/status`, { status });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Order status updated" });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+    },
+    onError: (err: any) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const fetchOrderDetails = async (orderId: number) => {
+    try {
+      const response = await apiRequest("GET", `/api/orders/${orderId}`);
+      const order = await response.json();
+      setSelectedOrder(order);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
   useEffect(() => {
     if (!authLoading && !isAdmin) {
       toast({
@@ -85,34 +114,6 @@ export default function AdminOrders() {
       </div>
     );
   }
-
-  const { data: orders, isLoading, error } = useQuery<Order[]>({
-    queryKey: ["/api/admin/orders"],
-  });
-
-  const updateStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: number; status: string }) => {
-      const response = await apiRequest("PUT", `/api/admin/orders/${id}/status`, { status });
-      return response.json();
-    },
-    onSuccess: () => {
-      toast({ title: "Order status updated" });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
-    },
-    onError: (err: any) => {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    },
-  });
-
-  const fetchOrderDetails = async (orderId: number) => {
-    try {
-      const response = await apiRequest("GET", `/api/orders/${orderId}`);
-      const order = await response.json();
-      setSelectedOrder(order);
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    }
-  };
 
   const formatPrice = (price: number, currency: string = "PKR") => {
     return new Intl.NumberFormat("en-PK", {
