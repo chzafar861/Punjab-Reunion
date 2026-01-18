@@ -49,7 +49,12 @@ export const orders = pgTable("orders", {
   customerName: text("customer_name").notNull(),
   customerEmail: text("customer_email").notNull(),
   customerPhone: text("customer_phone"),
-  shippingAddress: text("shipping_address"),
+  customerPhone2: text("customer_phone_2"), // Optional second phone number
+  country: text("country"),
+  province: text("province"),
+  city: text("city"),
+  streetAddress: text("street_address"), // Home address
+  shippingAddress: text("shipping_address"), // Legacy field (combined address)
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

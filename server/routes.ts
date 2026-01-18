@@ -567,7 +567,10 @@ export async function registerRoutes(
   app.post("/api/orders", requireSupabaseUser, async (req: any, res) => {
     try {
       const userId = req.supabaseUser?.id;
-      const { customerName, customerEmail, customerPhone, shippingAddress, notes, items } = req.body;
+      const { 
+        customerName, customerEmail, customerPhone, customerPhone2,
+        country, province, city, streetAddress, notes, items 
+      } = req.body;
       
       if (!customerName || !customerEmail || !items || !items.length) {
         return res.status(400).json({ message: "Customer name, email, and items are required" });
@@ -583,6 +586,9 @@ export async function registerRoutes(
         totalAmount += product.price * (item.quantity || 1);
       }
       
+      // Create combined shipping address for display
+      const shippingAddress = [streetAddress, city, province, country].filter(Boolean).join(", ");
+      
       // Create order
       const order = await storage.createOrder({
         userId,
@@ -592,6 +598,11 @@ export async function registerRoutes(
         customerName,
         customerEmail,
         customerPhone,
+        customerPhone2,
+        country,
+        province,
+        city,
+        streetAddress,
         shippingAddress,
         notes,
       });

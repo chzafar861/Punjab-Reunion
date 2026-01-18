@@ -31,7 +31,11 @@ export function OrderDialog({ open, onOpenChange, product }: OrderDialogProps) {
     customerName: "",
     customerEmail: "",
     customerPhone: "",
-    shippingAddress: "",
+    customerPhone2: "",
+    country: "",
+    province: "",
+    city: "",
+    streetAddress: "",
     notes: "",
     quantity: 1,
   });
@@ -51,7 +55,11 @@ export function OrderDialog({ open, onOpenChange, product }: OrderDialogProps) {
         customerName: formData.customerName,
         customerEmail: formData.customerEmail,
         customerPhone: formData.customerPhone || undefined,
-        shippingAddress: formData.shippingAddress || undefined,
+        customerPhone2: formData.customerPhone2 || undefined,
+        country: formData.country || undefined,
+        province: formData.province || undefined,
+        city: formData.city || undefined,
+        streetAddress: formData.streetAddress || undefined,
         notes: formData.notes || undefined,
         items: [
           {
@@ -73,7 +81,11 @@ export function OrderDialog({ open, onOpenChange, product }: OrderDialogProps) {
         customerName: "",
         customerEmail: "",
         customerPhone: "",
-        shippingAddress: "",
+        customerPhone2: "",
+        country: "",
+        province: "",
+        city: "",
+        streetAddress: "",
         notes: "",
         quantity: 1,
       });
@@ -99,10 +111,11 @@ export function OrderDialog({ open, onOpenChange, product }: OrderDialogProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.customerName || !formData.customerEmail) {
+    if (!formData.customerName || !formData.customerEmail || !formData.customerPhone || 
+        !formData.country || !formData.province || !formData.city || !formData.streetAddress) {
       toast({
         title: "Missing Information",
-        description: "Please fill in your name and email.",
+        description: "Please fill in all required fields.",
         variant: "destructive",
       });
       return;
@@ -132,7 +145,7 @@ export function OrderDialog({ open, onOpenChange, product }: OrderDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Place Order</DialogTitle>
           <DialogDescription>
@@ -179,27 +192,83 @@ export function OrderDialog({ open, onOpenChange, product }: OrderDialogProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="customerPhone">Phone</Label>
+            <Label htmlFor="customerPhone">Phone *</Label>
             <Input
               id="customerPhone"
               type="tel"
               value={formData.customerPhone}
               onChange={(e) => setFormData({ ...formData, customerPhone: e.target.value })}
               placeholder="Enter your phone number"
+              required
               data-testid="input-order-phone"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="shippingAddress">Shipping Address</Label>
-            <Textarea
-              id="shippingAddress"
-              value={formData.shippingAddress}
-              onChange={(e) => setFormData({ ...formData, shippingAddress: e.target.value })}
-              placeholder="Enter your shipping address"
-              rows={2}
-              data-testid="input-order-address"
+            <Label htmlFor="customerPhone2">Second Phone (Optional)</Label>
+            <Input
+              id="customerPhone2"
+              type="tel"
+              value={formData.customerPhone2}
+              onChange={(e) => setFormData({ ...formData, customerPhone2: e.target.value })}
+              placeholder="Enter alternate phone number"
+              data-testid="input-order-phone2"
             />
+          </div>
+
+          <div className="border-t pt-4 mt-4">
+            <h4 className="font-medium mb-3">Shipping Address</h4>
+            
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="country">Country *</Label>
+                <Input
+                  id="country"
+                  value={formData.country}
+                  onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                  placeholder="e.g., Pakistan"
+                  required
+                  data-testid="input-order-country"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="province">Province/State *</Label>
+                <Input
+                  id="province"
+                  value={formData.province}
+                  onChange={(e) => setFormData({ ...formData, province: e.target.value })}
+                  placeholder="e.g., Punjab"
+                  required
+                  data-testid="input-order-province"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="city">City *</Label>
+                <Input
+                  id="city"
+                  value={formData.city}
+                  onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                  placeholder="e.g., Lahore"
+                  required
+                  data-testid="input-order-city"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="streetAddress">Home Address *</Label>
+                <Textarea
+                  id="streetAddress"
+                  value={formData.streetAddress}
+                  onChange={(e) => setFormData({ ...formData, streetAddress: e.target.value })}
+                  placeholder="Enter your complete home address"
+                  rows={2}
+                  required
+                  data-testid="input-order-street"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="space-y-2">

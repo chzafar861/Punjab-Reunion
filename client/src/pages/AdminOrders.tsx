@@ -259,6 +259,10 @@ export default function AdminOrders() {
                   <p className="font-medium">{selectedOrder.customerPhone || "-"}</p>
                 </div>
                 <div>
+                  <p className="text-muted-foreground">Second Phone</p>
+                  <p className="font-medium">{(selectedOrder as any).customerPhone2 || "-"}</p>
+                </div>
+                <div>
                   <p className="text-muted-foreground">Status</p>
                   <Badge variant={statusColors[selectedOrder.status] || "secondary"}>
                     {selectedOrder.status}
@@ -266,15 +270,30 @@ export default function AdminOrders() {
                 </div>
               </div>
 
-              {selectedOrder.shippingAddress && (
-                <div className="text-sm">
-                  <p className="text-muted-foreground">Shipping Address</p>
-                  <p className="font-medium">{selectedOrder.shippingAddress}</p>
+              <div className="border-t pt-4">
+                <p className="font-medium mb-2">Shipping Address</p>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <p className="text-muted-foreground">Country</p>
+                    <p className="font-medium">{(selectedOrder as any).country || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">Province/State</p>
+                    <p className="font-medium">{(selectedOrder as any).province || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-muted-foreground">City</p>
+                    <p className="font-medium">{(selectedOrder as any).city || "-"}</p>
+                  </div>
+                  <div className="col-span-2">
+                    <p className="text-muted-foreground">Home Address</p>
+                    <p className="font-medium">{(selectedOrder as any).streetAddress || "-"}</p>
+                  </div>
                 </div>
-              )}
+              </div>
 
               {selectedOrder.notes && (
-                <div className="text-sm">
+                <div className="text-sm border-t pt-4">
                   <p className="text-muted-foreground">Notes</p>
                   <p className="font-medium">{selectedOrder.notes}</p>
                 </div>
