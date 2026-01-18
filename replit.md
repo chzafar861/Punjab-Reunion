@@ -63,6 +63,48 @@ Profile photos support multiple URL formats:
 - Protected routes require Authorization header with Bearer token
 - User ID from Supabase is used for profile/comment ownership
 
+### Role-Based Access Control (RBAC)
+The application implements a role-based permission system:
+
+**Database Table**: `user_roles`
+- `user_id`: References Supabase auth user
+- `role`: "admin" | "contributor" | "member"
+- `can_submit_profiles`: Boolean for profile submission permission
+- `can_manage_products`: Boolean for product management permission
+
+**Permission Logic**:
+- Admin role has full access to all features
+- `canSubmitProfiles`: Required to submit new profiles (admin or explicit permission)
+- `canManageProducts`: Required to manage shop products (admin or explicit permission)
+
+**Protected Features**:
+- Profile Submission: Requires admin role OR canSubmitProfiles permission
+- Admin Dashboard: Requires admin role (Products, Orders, Users management)
+
+**API Endpoints**:
+- `GET /api/auth/me`: Returns user info with role and permissions
+- Admin routes use `requireAdmin` middleware for server-side enforcement
+
+### E-Commerce Shop Feature
+**Database Tables**:
+- `products`: Shop items (title, description, price, images, category, status)
+- `orders`: Customer orders with status tracking
+- `order_items`: Individual items within orders
+
+**Pages**:
+- `/shop`: Public product browsing page
+- `/shop/:id`: Product detail page with order button
+- `/admin/products`: Admin product management (add/edit/delete)
+- `/admin/orders`: Admin order management (view/update status)
+- `/admin/users`: Admin user role management (grant/revoke permissions)
+
+**Order Flow**:
+1. User browses products on Shop page
+2. User clicks "Order Now" on product detail
+3. OrderDialog collects shipping details
+4. Order saved to database with "pending" status
+5. Admin manages orders from Admin Orders page
+
 ### Shared Code Pattern
 The `shared/` directory contains code used by both frontend and backend:
 - `schema.ts`: Database table definitions and Zod insert schemas
