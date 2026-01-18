@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
-import { Plus, Edit, Trash2, Package, Eye, EyeOff, Loader2 } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { Plus, Edit, Trash2, Package, Eye, EyeOff, Loader2, Upload, X, ImageIcon } from "lucide-react";
+import { useSupabaseUpload, extractFilePathFromUrl } from "@/hooks/use-supabase-upload";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -65,6 +66,17 @@ export default function AdminProducts() {
   const [formData, setFormData] = useState<ProductFormData>(emptyForm);
   const { user, isLoading: authLoading } = useAuth();
   const [, setLocation] = useLocation();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  
+  const { uploadFile, deleteFile, isUploading, progress } = useSupabaseUpload({
+    bucket: "product-images",
+    folder: "products",
+    onError: (err) => {
+      toast({ title: "Upload Error", description: err.message, variant: "destructive" });
+    },
+  });
   
   const isAdmin = user?.role === "admin";
 
@@ -155,6 +167,8 @@ export default function AdminProducts() {
   const openCreateDialog = () => {
     setEditingProduct(null);
     setFormData(emptyForm);
+    setImagePreview(null);
+    setSelectedFile(null);
     setShowDialog(true);
   };
 
@@ -170,6 +184,8 @@ export default function AdminProducts() {
       status: product.status,
       inventoryCount: product.inventoryCount || 0,
     });
+    setImagePreview(product.imageUrl || null);
+    setSelectedFile(null);
     setShowDialog(true);
   };
 
@@ -177,14 +193,60 @@ export default function AdminProducts() {
     setShowDialog(false);
     setEditingProduct(null);
     setFormData(emptyForm);
+    setImagePreview(null);
+    setSelectedFile(null);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    if (!file.type.startsWith("image/")) {
+      toast({ title: "Invalid file", description: "Please select an image file", variant: "destructive" });
+      return;
+    }
+    
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Please select an image under 5MB", variant: "destructive" });
+      return;
+    }
+    
+    setSelectedFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeImage = () => {
+    setSelectedFile(null);
+    setImagePreview(null);
+    setFormData({ ...formData, imageUrl: "" });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    let finalImageUrl = formData.imageUrl;
+    
+    if (selectedFile) {
+      const uploadResult = await uploadFile(selectedFile);
+      if (!uploadResult) {
+        return;
+      }
+      finalImageUrl = uploadResult.publicUrl;
+    }
+    
+    const submitData = { ...formData, imageUrl: finalImageUrl };
+    
     if (editingProduct) {
-      updateProduct.mutate({ id: editingProduct.id, data: formData });
+      updateProduct.mutate({ id: editingProduct.id, data: submitData });
     } else {
-      createProduct.mutate(formData);
+      createProduct.mutate(submitData);
     }
   };
 
@@ -413,15 +475,52 @@ export default function AdminProducts() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="imageUrl">Image URL</Label>
-              <Input
-                id="imageUrl"
-                type="url"
-                value={formData.imageUrl}
-                onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                placeholder="https://..."
-                data-testid="input-product-image"
+              <Label>Product Image</Label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                className="hidden"
+                data-testid="input-product-image-file"
               />
+              
+              {imagePreview ? (
+                <div className="relative w-full h-40 bg-muted rounded-md overflow-hidden">
+                  <img 
+                    src={imagePreview} 
+                    alt="Product preview" 
+                    className="w-full h-full object-cover"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 right-2"
+                    onClick={removeImage}
+                    data-testid="button-remove-product-image"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div
+                  className="w-full h-40 bg-muted rounded-md border-2 border-dashed border-muted-foreground/30 flex flex-col items-center justify-center cursor-pointer hover:border-primary/50 transition-colors"
+                  onClick={() => fileInputRef.current?.click()}
+                  data-testid="button-upload-product-image"
+                >
+                  <ImageIcon className="h-10 w-10 text-muted-foreground/50 mb-2" />
+                  <span className="text-sm text-muted-foreground">Click to upload image</span>
+                  <span className="text-xs text-muted-foreground/70 mt-1">Max size: 5MB</span>
+                </div>
+              )}
+              
+              {isUploading && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Uploading... {progress}%</span>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -447,10 +546,12 @@ export default function AdminProducts() {
               </Button>
               <Button 
                 type="submit" 
-                disabled={createProduct.isPending || updateProduct.isPending}
+                disabled={createProduct.isPending || updateProduct.isPending || isUploading}
                 data-testid="button-save-product"
               >
-                {createProduct.isPending || updateProduct.isPending
+                {isUploading
+                  ? "Uploading image..."
+                  : createProduct.isPending || updateProduct.isPending
                   ? "Saving..."
                   : editingProduct
                   ? "Update Product"
