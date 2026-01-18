@@ -258,7 +258,7 @@ export default function AdminUsers() {
                 data-testid="input-new-user-id"
               />
               <p className="text-xs text-muted-foreground">
-                You can find user IDs in your Supabase dashboard under Authentication > Users
+                You can find user IDs in your Supabase dashboard under Authentication → Users
               </p>
             </div>
 

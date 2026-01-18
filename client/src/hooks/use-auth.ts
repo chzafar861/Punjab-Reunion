@@ -10,6 +10,9 @@ export interface AuthUser {
   lastName: string | null;
   emailVerified: boolean | null;
   profileImageUrl: string | null;
+  role?: string;
+  canSubmitProfiles?: boolean;
+  canManageProducts?: boolean;
 }
 
 async function fetchUser(): Promise<AuthUser | null> {
@@ -27,7 +30,7 @@ async function fetchUser(): Promise<AuthUser | null> {
     const user = session.user;
     const metadata = user.user_metadata || {};
 
-    return {
+    const baseUser: AuthUser = {
       id: user.id,
       email: user.email || null,
       username: metadata.username || null,
@@ -36,6 +39,28 @@ async function fetchUser(): Promise<AuthUser | null> {
       emailVerified: user.email_confirmed_at ? true : false,
       profileImageUrl: metadata.avatar_url || metadata.profileImageUrl || null,
     };
+
+    // Try to fetch role from API
+    try {
+      const response = await fetch("/api/auth/me", {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+      if (response.ok) {
+        const apiUser = await response.json();
+        return {
+          ...baseUser,
+          role: apiUser.role,
+          canSubmitProfiles: apiUser.canSubmitProfiles,
+          canManageProducts: apiUser.canManageProducts,
+        };
+      }
+    } catch {
+      // Ignore API errors, return base user
+    }
+
+    return baseUser;
   } catch (err) {
     console.warn("Failed to fetch user:", err);
     return null;

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Menu, X, Globe, User, LogOut, FileText, PlusCircle } from "lucide-react";
+import { Menu, X, Globe, User, LogOut, FileText, PlusCircle, ShoppingBag, Settings, Package, ClipboardList, Users } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -25,8 +25,11 @@ export function Navigation() {
     { href: "/", label: t("nav.home") },
     { href: "/directory", label: t("nav.directory") },
     { href: "/tours", label: t("nav.tours") },
+    { href: "/shop", label: "Shop" },
     { href: "/contact", label: t("nav.contact") },
   ];
+  
+  const isAdmin = user?.role === "admin";
 
   return (
     <header className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-md border-b border-border/50">
@@ -84,6 +87,29 @@ export function Navigation() {
                         {t("nav.myProfiles")}
                       </Link>
                     </DropdownMenuItem>
+                    {isAdmin && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem asChild>
+                          <Link href="/admin/products" className="cursor-pointer" data-testid="link-admin-products">
+                            <Package className="mr-2 h-4 w-4" />
+                            Manage Products
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/admin/orders" className="cursor-pointer" data-testid="link-admin-orders">
+                            <ClipboardList className="mr-2 h-4 w-4" />
+                            Manage Orders
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/admin/users" className="cursor-pointer" data-testid="link-admin-users">
+                            <Users className="mr-2 h-4 w-4" />
+                            Manage Users
+                          </Link>
+                        </DropdownMenuItem>
+                      </>
+                    )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
                       <button
@@ -172,6 +198,44 @@ export function Navigation() {
                   >
                     {t("nav.myProfiles")}
                   </Link>
+                  {isAdmin && (
+                    <>
+                      <div className="text-xs text-muted-foreground uppercase tracking-wide mt-2">Admin</div>
+                      <Link 
+                        href="/admin/products"
+                        className={`text-lg font-medium py-2 flex items-center gap-2 ${
+                          location === "/admin/products" ? "text-primary" : "text-secondary"
+                        }`}
+                        onClick={() => setIsOpen(false)}
+                        data-testid="link-nav-mobile-admin-products"
+                      >
+                        <Package className="w-5 h-5" />
+                        Manage Products
+                      </Link>
+                      <Link 
+                        href="/admin/orders"
+                        className={`text-lg font-medium py-2 flex items-center gap-2 ${
+                          location === "/admin/orders" ? "text-primary" : "text-secondary"
+                        }`}
+                        onClick={() => setIsOpen(false)}
+                        data-testid="link-nav-mobile-admin-orders"
+                      >
+                        <ClipboardList className="w-5 h-5" />
+                        Manage Orders
+                      </Link>
+                      <Link 
+                        href="/admin/users"
+                        className={`text-lg font-medium py-2 flex items-center gap-2 ${
+                          location === "/admin/users" ? "text-primary" : "text-secondary"
+                        }`}
+                        onClick={() => setIsOpen(false)}
+                        data-testid="link-nav-mobile-admin-users"
+                      >
+                        <Users className="w-5 h-5" />
+                        Manage Users
+                      </Link>
+                    </>
+                  )}
                 </>
               )}
               <div className="pt-2 border-t border-border flex items-center justify-between">
