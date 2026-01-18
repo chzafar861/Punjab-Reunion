@@ -7,12 +7,14 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState } from "react";
 import { OrderDialog } from "@/components/OrderDialog";
+import { useLanguage } from "@/contexts/LanguageContext";
 import type { Product } from "@shared/schema";
 
 export default function ProductDetail() {
   const params = useParams();
   const productId = params.id;
   const [showOrderDialog, setShowOrderDialog] = useState(false);
+  const { t } = useLanguage();
   
   const { data: product, isLoading } = useQuery<Product>({
     queryKey: ["/api/products", productId],
@@ -52,9 +54,9 @@ export default function ProductDetail() {
       <main className="flex-1 bg-background py-12">
         <div className="container mx-auto px-4 text-center">
           <Package className="w-20 h-20 text-muted-foreground/50 mx-auto mb-4" />
-          <h1 className="text-2xl font-semibold mb-4">Product Not Found</h1>
+          <h1 className="text-2xl font-semibold mb-4">{t("product.notFound")}</h1>
           <Link href="/shop">
-            <Button>Back to Shop</Button>
+            <Button>{t("product.backToShop")}</Button>
           </Link>
         </div>
       </main>
@@ -66,7 +68,7 @@ export default function ProductDetail() {
       <div className="container mx-auto px-4 max-w-4xl">
         <Link href="/shop" className="inline-flex items-center text-muted-foreground hover:text-foreground mb-8">
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Shop
+          {t("product.backToShop")}
         </Link>
 
         <div className="grid md:grid-cols-2 gap-8">

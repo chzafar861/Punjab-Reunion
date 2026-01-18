@@ -5,6 +5,7 @@ import { z } from "zod";
 import { useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,6 +31,7 @@ type SubscriptionRequestData = z.infer<typeof subscriptionRequestSchema>;
 export default function SubscriptionRequest() {
   const { toast } = useToast();
   const { user, isAuthenticated } = useAuth();
+  const { t } = useLanguage();
   const [, setLocation] = useLocation();
   const [submitted, setSubmitted] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<"contributor" | "seller">("contributor");

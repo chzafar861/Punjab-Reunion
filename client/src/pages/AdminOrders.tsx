@@ -29,6 +29,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useLocation } from "wouter";
 import type { Order, OrderItem } from "@shared/schema";
 
@@ -46,6 +47,7 @@ const statusColors: Record<string, "default" | "secondary" | "destructive" | "ou
 export default function AdminOrders() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
   const { user, isLoading: authLoading } = useAuth();
   const [, setLocation] = useLocation();

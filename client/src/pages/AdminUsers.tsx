@@ -33,6 +33,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useLocation } from "wouter";
 import type { UserRoleRecord } from "@shared/schema";
 
@@ -45,6 +46,7 @@ const roleColors: Record<string, "default" | "secondary" | "outline"> = {
 export default function AdminUsers() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [newUserData, setNewUserData] = useState({
