@@ -56,7 +56,7 @@ export function Navigation() {
     { href: "/", label: t("nav.home") },
     { href: "/directory", label: t("nav.directory") },
     { href: "/tours", label: t("nav.tours") },
-    { href: "/shop", label: "Shop" },
+    { href: "/shop", label: t("nav.shop") },
     { href: "/contact", label: t("nav.contact") },
   ];
   

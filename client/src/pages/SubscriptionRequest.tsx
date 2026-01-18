@@ -86,14 +86,14 @@ export default function SubscriptionRequest() {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="max-w-md">
           <CardHeader>
-            <CardTitle>Please Log In</CardTitle>
+            <CardTitle>{t("subscription.loginRequired")}</CardTitle>
             <CardDescription>
-              You need to be logged in to request a subscription.
+              {t("subscription.loginRequiredDesc")}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button onClick={() => setLocation("/login")} className="w-full">
-              Go to Login
+              {t("subscription.goToLogin")}
             </Button>
           </CardContent>
         </Card>
@@ -110,18 +110,17 @@ export default function SubscriptionRequest() {
               <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mb-4">
                 <CheckCircle className="w-8 h-8 text-green-600" />
               </div>
-              <CardTitle className="text-2xl">Request Submitted Successfully!</CardTitle>
+              <CardTitle className="text-2xl">{t("subscription.submitted")}</CardTitle>
               <CardDescription className="text-lg mt-2">
-                Thank you for your interest in the {selectedPlan === "seller" ? "Seller" : "Contributor"} plan.
+                {t("subscription.thankYou")} {selectedPlan === "seller" ? t("subscription.sellerPlan") : t("subscription.contributorPlan")}.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground">
-                Our team will review your request and contact you within 24-48 hours 
-                with payment instructions and next steps.
+                {t("subscription.submittedDesc")}
               </p>
               <Button onClick={() => setLocation("/")} variant="outline">
-                Return to Home
+                {t("subscription.returnHome")}
               </Button>
             </CardContent>
           </Card>
@@ -136,13 +135,13 @@ export default function SubscriptionRequest() {
         <div className="text-center mb-10">
           <Badge variant="secondary" className="mb-4">
             <Crown className="w-3 h-3 mr-1" />
-            Choose Your Plan
+            {t("subscription.choosePlan")}
           </Badge>
           <h1 className="font-serif text-4xl font-bold text-secondary mb-4">
-            Become a Heritage Contributor
+            {t("subscription.title")}
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Join our community of heritage preservers. Choose the plan that fits your needs.
+            {t("subscription.subtitle")}
           </p>
         </div>
 
@@ -160,7 +159,7 @@ export default function SubscriptionRequest() {
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <FileText className="w-5 h-5 text-primary" />
-                  Contributor Plan
+                  {t("subscription.contributorPlan")}
                 </CardTitle>
                 {selectedPlan === "contributor" && (
                   <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center">
@@ -170,26 +169,26 @@ export default function SubscriptionRequest() {
               </div>
               <div className="mt-4">
                 <span className="text-4xl font-bold text-primary">$20</span>
-                <span className="text-muted-foreground">/month</span>
+                <span className="text-muted-foreground">{t("subscription.perMonth")}</span>
               </div>
             </CardHeader>
             <CardContent>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 shrink-0" />
-                  <span>Submit unlimited heritage profiles</span>
+                  <span>{t("subscription.submitProfiles")}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 shrink-0" />
-                  <span>Edit and manage your profiles</span>
+                  <span>{t("subscription.editProfiles")}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 shrink-0" />
-                  <span>Upload photos and documents</span>
+                  <span>{t("subscription.uploadPhotos")}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 shrink-0" />
-                  <span>Help families reconnect</span>
+                  <span>{t("subscription.helpFamilies")}</span>
                 </li>
               </ul>
             </CardContent>
@@ -208,9 +207,9 @@ export default function SubscriptionRequest() {
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                   <ShoppingBag className="w-5 h-5 text-primary" />
-                  Seller Plan
+                  {t("subscription.sellerPlan")}
                 </CardTitle>
-                <Badge variant="secondary" className="text-xs">Popular</Badge>
+                <Badge variant="secondary" className="text-xs">{t("subscription.popular")}</Badge>
               </div>
               {selectedPlan === "seller" && (
                 <div className="absolute top-4 right-4 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
@@ -219,26 +218,26 @@ export default function SubscriptionRequest() {
               )}
               <div className="mt-4">
                 <span className="text-4xl font-bold text-primary">$25</span>
-                <span className="text-muted-foreground">/month</span>
+                <span className="text-muted-foreground">{t("subscription.perMonth")}</span>
               </div>
             </CardHeader>
             <CardContent>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 shrink-0" />
-                  <span>Everything in Contributor Plan</span>
+                  <span>{t("subscription.everythingContributor")}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 shrink-0" />
-                  <span className="font-medium">Sell products in the Shop</span>
+                  <span className="font-medium">{t("subscription.sellProducts")}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 shrink-0" />
-                  <span>Manage your product listings</span>
+                  <span>{t("subscription.manageProducts")}</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-green-600 mt-0.5 shrink-0" />
-                  <span>Receive and fulfill orders</span>
+                  <span>{t("subscription.fulfillOrders")}</span>
                 </li>
               </ul>
             </CardContent>
@@ -248,10 +247,10 @@ export default function SubscriptionRequest() {
         <Card className="max-w-2xl mx-auto">
           <CardHeader>
             <CardTitle>
-              Request {selectedPlan === "seller" ? "Seller" : "Contributor"} Access
+              {t("subscription.requestAccess")} - {selectedPlan === "seller" ? t("subscription.sellerPlan") : t("subscription.contributorPlan")}
             </CardTitle>
             <CardDescription>
-              Fill out your details below. We'll contact you with payment instructions for ${selectedPlan === "seller" ? "25" : "20"}/month.
+              {t("subscription.fillDetails")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -265,8 +264,8 @@ export default function SubscriptionRequest() {
                   )}
                 </div>
                 <div>
-                  <p className="font-medium">{selectedPlan === "seller" ? "Seller Plan" : "Contributor Plan"}</p>
-                  <p className="text-sm text-muted-foreground">${selectedPlan === "seller" ? "25" : "20"}/month</p>
+                  <p className="font-medium">{selectedPlan === "seller" ? t("subscription.sellerPlan") : t("subscription.contributorPlan")}</p>
+                  <p className="text-sm text-muted-foreground">${selectedPlan === "seller" ? "25" : "20"}{t("subscription.perMonth")}</p>
                 </div>
                 <Button 
                   type="button" 
@@ -275,12 +274,12 @@ export default function SubscriptionRequest() {
                   className="ml-auto"
                   onClick={() => handlePlanSelect(selectedPlan === "seller" ? "contributor" : "seller")}
                 >
-                  Change Plan
+                  {t("subscription.changePlan")}
                 </Button>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name *</Label>
+                <Label htmlFor="fullName">{t("subscription.fullName")} *</Label>
                 <Input
                   id="fullName"
                   {...form.register("fullName")}
@@ -293,7 +292,7 @@ export default function SubscriptionRequest() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email *</Label>
+                <Label htmlFor="email">{t("subscription.email")} *</Label>
                 <Input
                   id="email"
                   type="email"
@@ -307,7 +306,7 @@ export default function SubscriptionRequest() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number *</Label>
+                <Label htmlFor="phone">{t("subscription.phone")} *</Label>
                 <Input
                   id="phone"
                   type="tel"
@@ -322,7 +321,7 @@ export default function SubscriptionRequest() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="country">Country *</Label>
+                  <Label htmlFor="country">{t("subscription.country")} *</Label>
                   <Input
                     id="country"
                     {...form.register("country")}
@@ -334,7 +333,7 @@ export default function SubscriptionRequest() {
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="city">City *</Label>
+                  <Label htmlFor="city">{t("subscription.city")} *</Label>
                   <Input
                     id="city"
                     {...form.register("city")}
@@ -348,7 +347,7 @@ export default function SubscriptionRequest() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="reason">Why do you want this subscription? *</Label>
+                <Label htmlFor="reason">{t("subscription.reason")} *</Label>
                 <Textarea
                   id="reason"
                   {...form.register("reason")}
@@ -373,12 +372,12 @@ export default function SubscriptionRequest() {
                 {submitRequest.isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Submitting...
+                    {t("subscription.submitting")}
                   </>
                 ) : (
                   <>
                     <Send className="mr-2 h-4 w-4" />
-                    Submit Request for {selectedPlan === "seller" ? "Seller" : "Contributor"} Plan
+                    {t("subscription.submitRequest")}
                   </>
                 )}
               </Button>

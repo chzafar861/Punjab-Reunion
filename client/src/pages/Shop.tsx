@@ -30,10 +30,10 @@ export default function Shop() {
           <div className="text-center max-w-3xl mx-auto">
             <ShoppingBag className="w-16 h-16 text-primary mx-auto mb-4" />
             <h1 className="text-4xl md:text-5xl font-serif font-bold text-foreground mb-4">
-              Heritage Shop
+              {t("shop.title")}
             </h1>
             <p className="text-lg text-muted-foreground">
-              Discover authentic Punjabi heritage products, crafts, and cultural items
+              {t("shop.subtitle")}
             </p>
           </div>
         </div>
@@ -88,7 +88,7 @@ export default function Shop() {
                   <CardFooter className="p-4 pt-0">
                     <Link href={`/shop/${product.id}`} className="w-full">
                       <Button className="w-full" data-testid={`button-view-product-${product.id}`}>
-                        View Details
+                        {t("shop.viewDetails")}
                       </Button>
                     </Link>
                   </CardFooter>
@@ -98,9 +98,9 @@ export default function Shop() {
           ) : (
             <div className="text-center py-16">
               <Package className="w-20 h-20 text-muted-foreground/50 mx-auto mb-4" />
-              <h2 className="text-2xl font-semibold text-foreground mb-2">No Products Available</h2>
+              <h2 className="text-2xl font-semibold text-foreground mb-2">{t("shop.noProducts")}</h2>
               <p className="text-muted-foreground">
-                Check back soon for authentic heritage products!
+                {t("shop.subtitle")}
               </p>
             </div>
           )}
