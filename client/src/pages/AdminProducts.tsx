@@ -71,7 +71,7 @@ export default function AdminProducts() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   
   const { uploadFile, deleteFile, isUploading, progress } = useSupabaseUpload({
-    bucket: "product-images",
+    bucket: "profile-photos",
     folder: "products",
     onError: (err) => {
       toast({ title: "Upload Error", description: err.message, variant: "destructive" });
