@@ -456,6 +456,68 @@ export async function registerRoutes(
     res.json(updated);
   });
 
+  // ========== SUBSCRIPTION REQUESTS ==========
+  
+  // Protected: Create subscription request
+  app.post("/api/subscription-requests", requireSupabaseUser, async (req: any, res) => {
+    try {
+      const userId = req.supabaseUser?.id;
+      const { fullName, email, phone, country, city, reason } = req.body;
+      
+      if (!fullName || !email || !phone || !country || !city || !reason) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+      
+      const request = await storage.createSubscriptionRequest({
+        userId,
+        fullName,
+        email,
+        phone,
+        country,
+        city,
+        reason,
+      });
+      
+      res.status(201).json(request);
+    } catch (err: any) {
+      console.error("Subscription request error:", err);
+      res.status(500).json({ message: err.message || "Failed to submit request" });
+    }
+  });
+
+  // Admin: Get all subscription requests
+  app.get("/api/admin/subscription-requests", requireSupabaseUser, requireAdmin, async (req: any, res) => {
+    const requests = await storage.getSubscriptionRequests();
+    res.json(requests);
+  });
+
+  // Admin: Update subscription request status and grant permission
+  app.put("/api/admin/subscription-requests/:id", requireSupabaseUser, requireAdmin, async (req: any, res) => {
+    try {
+      const requestId = Number(req.params.id);
+      const { status } = req.body;
+      
+      if (!["approved", "rejected"].includes(status)) {
+        return res.status(400).json({ message: "Invalid status" });
+      }
+      
+      const request = await storage.updateSubscriptionRequestStatus(requestId, status);
+      
+      if (!request) {
+        return res.status(404).json({ message: "Request not found" });
+      }
+      
+      // If approved, grant the user permission to submit profiles
+      if (status === "approved") {
+        await storage.setUserRole(request.userId, "contributor", true, false);
+      }
+      
+      res.json(request);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
   // ========== PRODUCT ROUTES ==========
 
   // Public: Get all published products

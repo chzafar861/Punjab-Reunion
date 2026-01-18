@@ -96,14 +96,7 @@ export default function SubmitProfile() {
         setLocation("/login");
       }, 500);
     } else if (!authLoading && isAuthenticated && !canSubmit) {
-      toast({
-        title: "Permission Required",
-        description: "You don't have permission to submit profiles. Please contact an administrator to request access.",
-        variant: "destructive",
-      });
-      setTimeout(() => {
-        setLocation("/");
-      }, 500);
+      setLocation("/subscription-request");
     }
   }, [authLoading, isAuthenticated, canSubmit, toast, setLocation, t]);
 

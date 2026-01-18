@@ -33,6 +33,7 @@ import ProductDetail from "@/pages/ProductDetail";
 import AdminProducts from "@/pages/AdminProducts";
 import AdminOrders from "@/pages/AdminOrders";
 import AdminUsers from "@/pages/AdminUsers";
+import SubscriptionRequest from "@/pages/SubscriptionRequest";
 
 // Helper layout
 function Layout({ children }: { children: React.ReactNode }) {
@@ -53,6 +54,7 @@ function Router() {
         <Route path="/directory" component={Directory} />
         <Route path="/profile/:id" component={ProfileDetail} />
         <Route path="/submit" component={SubmitProfile} />
+        <Route path="/subscription-request" component={SubscriptionRequest} />
         <Route path="/tours" component={HeritageTours} />
         <Route path="/tours/villages" component={PunjabVillages} />
         <Route path="/tours/lahore-history" component={LahoreHistory} />

@@ -170,6 +170,50 @@ export class SupabaseStorage implements IStorage {
     return snakeToCamel(data) as TourInquiry;
   }
 
+  // === SUBSCRIPTION REQUESTS ===
+  async createSubscriptionRequest(request: any): Promise<any> {
+    const snakeData = camelToSnake(request);
+    const { data, error } = await supabaseAdmin
+      .from("subscription_requests")
+      .insert(snakeData)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating subscription request:", error);
+      throw new Error(error.message);
+    }
+    return snakeToCamel(data);
+  }
+
+  async getSubscriptionRequests(): Promise<any[]> {
+    const { data, error } = await supabaseAdmin
+      .from("subscription_requests")
+      .select()
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching subscription requests:", error);
+      return [];
+    }
+    return (data || []).map(snakeToCamel);
+  }
+
+  async updateSubscriptionRequestStatus(id: number, status: string): Promise<any | null> {
+    const { data, error } = await supabaseAdmin
+      .from("subscription_requests")
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating subscription request:", error);
+      return null;
+    }
+    return snakeToCamel(data);
+  }
+
   async getProfileComments(profileId: number): Promise<ProfileComment[]> {
     const { data, error } = await supabaseAdmin
       .from("profile_comments")

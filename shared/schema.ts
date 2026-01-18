@@ -116,6 +116,21 @@ export const tourInquiries = pgTable("tour_inquiries", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Subscription requests for users wanting to become contributors
+export const subscriptionRequests = pgTable("subscription_requests", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull(), // Links to Supabase auth user
+  fullName: text("full_name").notNull(),
+  email: text("email").notNull(),
+  phone: text("phone").notNull(),
+  country: text("country").notNull(),
+  city: text("city").notNull(),
+  reason: text("reason").notNull(),
+  status: varchar("status").notNull().default("pending"), // pending, approved, rejected
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // === BASE SCHEMAS ===
 export const insertProfileSchema = createInsertSchema(profiles).omit({ id: true, createdAt: true }).extend({
   email: z.string().email().optional(),
@@ -131,6 +146,9 @@ export const insertTourInquirySchema = createInsertSchema(tourInquiries).omit({ 
   message: z.string().optional(),
 });
 export const insertProfileCommentSchema = createInsertSchema(profileComments).omit({ id: true, createdAt: true });
+
+// Subscription request schema
+export const insertSubscriptionRequestSchema = createInsertSchema(subscriptionRequests).omit({ id: true, createdAt: true, updatedAt: true, status: true });
 
 // User roles schemas
 export const insertUserRoleSchema = createInsertSchema(userRoles).omit({ id: true, createdAt: true, updatedAt: true });
@@ -171,6 +189,8 @@ export type Order = typeof orders.$inferSelect;
 export type InsertOrder = z.infer<typeof insertOrderSchema>;
 export type OrderItem = typeof orderItems.$inferSelect;
 export type InsertOrderItem = z.infer<typeof insertOrderItemSchema>;
+export type SubscriptionRequest = typeof subscriptionRequests.$inferSelect;
+export type InsertSubscriptionRequest = z.infer<typeof insertSubscriptionRequestSchema>;
 
 export type CreateProfileRequest = InsertProfile;
 export type CreateInquiryRequest = InsertInquiry;
