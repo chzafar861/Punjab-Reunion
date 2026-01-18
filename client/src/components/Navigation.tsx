@@ -16,6 +16,7 @@ import { LanguageSelector } from "@/components/LanguageSelector";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useQuery } from "@tanstack/react-query";
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
@@ -24,6 +25,13 @@ export function Navigation() {
   const { t } = useLanguage();
   const { toast } = useToast();
   const [settingUpAdmin, setSettingUpAdmin] = useState(false);
+  
+  // Check if any admin exists - only show "Become Admin" if NO admins exist
+  const { data: hasAdminData } = useQuery<{ hasAdmin: boolean }>({
+    queryKey: ["/api/auth/has-admin"],
+    staleTime: 60000, // Cache for 1 minute
+  });
+  const systemHasAdmin = hasAdminData?.hasAdmin ?? true; // Default to true to hide button
   
   const handleBecomeAdmin = async () => {
     setSettingUpAdmin(true);
@@ -113,7 +121,8 @@ export function Navigation() {
                         {t("nav.myProfiles")}
                       </Link>
                     </DropdownMenuItem>
-                    {!isAdmin && (
+                    {/* Only show "Become Admin" if NO admins exist in the system (first-time setup) */}
+                    {!isAdmin && !systemHasAdmin && (
                       <DropdownMenuItem asChild>
                         <button
                           type="button"

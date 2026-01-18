@@ -35,6 +35,17 @@ export async function registerRoutes(
     });
   });
   
+  // Check if any admins exist (for showing/hiding setup button)
+  app.get("/api/auth/has-admin", async (req, res) => {
+    try {
+      const allRoles = await storage.getAllUserRoles();
+      const existingAdmins = allRoles.filter(r => r.role === "admin");
+      res.json({ hasAdmin: existingAdmins.length > 0 });
+    } catch (error) {
+      res.json({ hasAdmin: true }); // Default to true to hide button on error
+    }
+  });
+
   // One-time setup: Make the current logged-in user an admin
   // This route is protected and only works if there are no admins yet OR if user is already admin
   app.post("/api/auth/setup-admin", requireSupabaseUser, async (req: any, res) => {
