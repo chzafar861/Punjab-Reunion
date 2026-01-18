@@ -23,9 +23,16 @@ export async function registerRoutes(
   // Register translation routes for AI-powered content translation
   registerTranslateRoutes(app);
   
-  // Supabase auth endpoint to get current user info
-  app.get("/api/auth/me", requireSupabaseUser, (req: any, res) => {
-    res.json(req.supabaseUser);
+  // Supabase auth endpoint to get current user info (with role)
+  app.get("/api/auth/me", requireSupabaseUser, async (req: any, res) => {
+    const userId = req.supabaseUser?.id;
+    const userRole = await storage.getUserRole(userId);
+    res.json({
+      ...req.supabaseUser,
+      role: userRole?.role || "member",
+      canSubmitProfiles: userRole?.canSubmitProfiles || false,
+      canManageProducts: userRole?.canManageProducts || false,
+    });
   });
 
   // Check if username is available (for signup validation)
@@ -353,6 +360,240 @@ export async function registerRoutes(
       return res.status(403).json({ message: "Not authorized to delete this comment" });
     }
     res.json({ success: true });
+  });
+
+  // ========== ADMIN ROUTES ==========
+
+  // Admin middleware helper
+  const requireAdmin = async (req: any, res: any, next: any) => {
+    const userId = req.supabaseUser?.id;
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    const userRole = await storage.getUserRole(userId);
+    if (!userRole || userRole.role !== "admin") {
+      return res.status(403).json({ message: "Admin access required" });
+    }
+    req.userRole = userRole;
+    next();
+  };
+
+  // Admin: Get all user roles
+  app.get("/api/admin/users", requireSupabaseUser, requireAdmin, async (req: any, res) => {
+    const roles = await storage.getAllUserRoles();
+    res.json(roles);
+  });
+
+  // Admin: Set user role
+  app.post("/api/admin/users/:userId/role", requireSupabaseUser, requireAdmin, async (req: any, res) => {
+    const { userId } = req.params;
+    const { role, canSubmitProfiles, canManageProducts } = req.body;
+    
+    if (!["admin", "contributor", "member"].includes(role)) {
+      return res.status(400).json({ message: "Invalid role" });
+    }
+    
+    const updated = await storage.setUserRole(
+      userId,
+      role,
+      canSubmitProfiles ?? false,
+      canManageProducts ?? false
+    );
+    res.json(updated);
+  });
+
+  // ========== PRODUCT ROUTES ==========
+
+  // Public: Get all published products
+  app.get("/api/products", async (req, res) => {
+    const { status, category } = req.query;
+    // Non-admin users can only see published products
+    const products = await storage.getProducts(
+      status as string || "published",
+      category as string
+    );
+    res.json(products);
+  });
+
+  // Public: Get single product
+  app.get("/api/products/:id", async (req, res) => {
+    const product = await storage.getProduct(Number(req.params.id));
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+    res.json(product);
+  });
+
+  // Admin: Get all products (including drafts)
+  app.get("/api/admin/products", requireSupabaseUser, requireAdmin, async (req: any, res) => {
+    const { status, category } = req.query;
+    const products = await storage.getProducts(
+      status as string,
+      category as string
+    );
+    res.json(products);
+  });
+
+  // Admin: Create product
+  app.post("/api/admin/products", requireSupabaseUser, requireAdmin, async (req: any, res) => {
+    try {
+      const userId = req.supabaseUser?.id;
+      const { title, description, price, currency, category, imageUrl, status, inventoryCount } = req.body;
+      
+      if (!title || !description || price === undefined) {
+        return res.status(400).json({ message: "Title, description, and price are required" });
+      }
+      
+      const product = await storage.createProduct({
+        adminId: userId,
+        title,
+        description,
+        price: Math.round(Number(price)),
+        currency: currency || "PKR",
+        category,
+        imageUrl,
+        status: status || "draft",
+        inventoryCount: inventoryCount || 0,
+      });
+      res.status(201).json(product);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // Admin: Update product
+  app.put("/api/admin/products/:id", requireSupabaseUser, requireAdmin, async (req: any, res) => {
+    try {
+      const userId = req.supabaseUser?.id;
+      const productId = Number(req.params.id);
+      const updateData = req.body;
+      
+      if (updateData.price !== undefined) {
+        updateData.price = Math.round(Number(updateData.price));
+      }
+      
+      const updated = await storage.updateProduct(productId, userId, updateData);
+      if (!updated) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      res.json(updated);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // Admin: Delete product
+  app.delete("/api/admin/products/:id", requireSupabaseUser, requireAdmin, async (req: any, res) => {
+    const userId = req.supabaseUser?.id;
+    const productId = Number(req.params.id);
+    const deleted = await storage.deleteProduct(productId, userId);
+    if (!deleted) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+    res.json({ success: true });
+  });
+
+  // ========== ORDER ROUTES ==========
+
+  // Protected: Get user's orders
+  app.get("/api/my-orders", requireSupabaseUser, async (req: any, res) => {
+    const userId = req.supabaseUser?.id;
+    const orders = await storage.getOrders(userId);
+    res.json(orders);
+  });
+
+  // Protected: Get single order (user can only see their own)
+  app.get("/api/orders/:id", requireSupabaseUser, async (req: any, res) => {
+    const userId = req.supabaseUser?.id;
+    const order = await storage.getOrder(Number(req.params.id));
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+    
+    // Check if admin or order owner
+    const userRole = await storage.getUserRole(userId);
+    if (order.userId !== userId && userRole?.role !== "admin") {
+      return res.status(403).json({ message: "Not authorized" });
+    }
+    
+    const items = await storage.getOrderItems(order.id);
+    res.json({ ...order, items });
+  });
+
+  // Protected: Create order
+  app.post("/api/orders", requireSupabaseUser, async (req: any, res) => {
+    try {
+      const userId = req.supabaseUser?.id;
+      const { customerName, customerEmail, customerPhone, shippingAddress, notes, items } = req.body;
+      
+      if (!customerName || !customerEmail || !items || !items.length) {
+        return res.status(400).json({ message: "Customer name, email, and items are required" });
+      }
+      
+      // Calculate total
+      let totalAmount = 0;
+      for (const item of items) {
+        const product = await storage.getProduct(item.productId);
+        if (!product) {
+          return res.status(400).json({ message: `Product ${item.productId} not found` });
+        }
+        totalAmount += product.price * (item.quantity || 1);
+      }
+      
+      // Create order
+      const order = await storage.createOrder({
+        userId,
+        status: "pending",
+        totalAmount,
+        currency: "PKR",
+        customerName,
+        customerEmail,
+        customerPhone,
+        shippingAddress,
+        notes,
+      });
+      
+      // Create order items
+      for (const item of items) {
+        const product = await storage.getProduct(item.productId);
+        if (product) {
+          await storage.createOrderItem({
+            orderId: order.id,
+            productId: item.productId,
+            quantity: item.quantity || 1,
+            unitPrice: product.price,
+            productTitle: product.title,
+          });
+        }
+      }
+      
+      res.status(201).json(order);
+    } catch (err: any) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+
+  // Admin: Get all orders
+  app.get("/api/admin/orders", requireSupabaseUser, requireAdmin, async (req: any, res) => {
+    const orders = await storage.getOrders();
+    res.json(orders);
+  });
+
+  // Admin: Update order status
+  app.put("/api/admin/orders/:id/status", requireSupabaseUser, requireAdmin, async (req: any, res) => {
+    const orderId = Number(req.params.id);
+    const { status } = req.body;
+    
+    const validStatuses = ["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: "Invalid status" });
+    }
+    
+    const updated = await storage.updateOrderStatus(orderId, status);
+    if (!updated) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+    res.json(updated);
   });
 
   // Seed data if empty (non-blocking)

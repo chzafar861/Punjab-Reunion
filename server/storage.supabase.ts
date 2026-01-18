@@ -4,10 +4,17 @@ import type {
   InsertInquiry,
   InsertTourInquiry,
   InsertProfileComment,
+  InsertProduct,
+  InsertOrder,
+  InsertOrderItem,
   Profile,
   Inquiry,
   TourInquiry,
   ProfileComment,
+  UserRoleRecord,
+  Product,
+  Order,
+  OrderItem,
 } from "@shared/schema";
 import type { IStorage } from "./storage";
 
@@ -240,5 +247,227 @@ export class SupabaseStorage implements IStorage {
       .delete()
       .eq("id", id);
     return !error;
+  }
+
+  // User Roles
+  async getUserRole(userId: string): Promise<UserRoleRecord | undefined> {
+    const { data, error } = await supabaseAdmin
+      .from("user_roles")
+      .select("*")
+      .eq("user_id", userId)
+      .single();
+
+    if (error || !data) return undefined;
+    return snakeToCamel(data) as UserRoleRecord;
+  }
+
+  async setUserRole(
+    userId: string,
+    role: string,
+    canSubmitProfiles: boolean,
+    canManageProducts: boolean
+  ): Promise<UserRoleRecord> {
+    const { data, error } = await supabaseAdmin
+      .from("user_roles")
+      .upsert({
+        user_id: userId,
+        role,
+        can_submit_profiles: canSubmitProfiles,
+        can_manage_products: canManageProducts,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "user_id" })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error setting user role:", error);
+      throw new Error(error.message);
+    }
+    return snakeToCamel(data) as UserRoleRecord;
+  }
+
+  async getAllUserRoles(): Promise<UserRoleRecord[]> {
+    const { data, error } = await supabaseAdmin
+      .from("user_roles")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching user roles:", error);
+      return [];
+    }
+    return (data || []).map(snakeToCamel) as UserRoleRecord[];
+  }
+
+  // Products
+  async getProducts(status?: string, category?: string): Promise<Product[]> {
+    let query = supabaseAdmin
+      .from("products")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (status) {
+      query = query.eq("status", status);
+    }
+    if (category) {
+      query = query.eq("category", category);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      console.error("Error fetching products:", error);
+      return [];
+    }
+    return (data || []).map(snakeToCamel) as Product[];
+  }
+
+  async getProduct(id: number): Promise<Product | undefined> {
+    const { data, error } = await supabaseAdmin
+      .from("products")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error || !data) return undefined;
+    return snakeToCamel(data) as Product;
+  }
+
+  async createProduct(product: InsertProduct & { adminId: string }): Promise<Product> {
+    const snakeProduct = camelToSnake(product);
+    const { data, error } = await supabaseAdmin
+      .from("products")
+      .insert(snakeProduct)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating product:", error);
+      throw new Error(error.message);
+    }
+    return snakeToCamel(data) as Product;
+  }
+
+  async updateProduct(
+    id: number,
+    adminId: string,
+    updateData: Partial<InsertProduct>
+  ): Promise<Product | null> {
+    const existing = await this.getProduct(id);
+    if (!existing) {
+      return null;
+    }
+
+    const { adminId: _, ...rest } = updateData as any;
+    const snakeData = camelToSnake(rest);
+    snakeData.updated_at = new Date().toISOString();
+
+    const { data, error } = await supabaseAdmin
+      .from("products")
+      .update(snakeData)
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating product:", error);
+      return null;
+    }
+    return snakeToCamel(data) as Product;
+  }
+
+  async deleteProduct(id: number, adminId: string): Promise<boolean> {
+    const { error } = await supabaseAdmin
+      .from("products")
+      .delete()
+      .eq("id", id);
+    return !error;
+  }
+
+  // Orders
+  async getOrders(userId?: string): Promise<Order[]> {
+    let query = supabaseAdmin
+      .from("orders")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (userId) {
+      query = query.eq("user_id", userId);
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      console.error("Error fetching orders:", error);
+      return [];
+    }
+    return (data || []).map(snakeToCamel) as Order[];
+  }
+
+  async getOrder(id: number): Promise<Order | undefined> {
+    const { data, error } = await supabaseAdmin
+      .from("orders")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error || !data) return undefined;
+    return snakeToCamel(data) as Order;
+  }
+
+  async createOrder(order: InsertOrder): Promise<Order> {
+    const snakeOrder = camelToSnake(order);
+    const { data, error } = await supabaseAdmin
+      .from("orders")
+      .insert(snakeOrder)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating order:", error);
+      throw new Error(error.message);
+    }
+    return snakeToCamel(data) as Order;
+  }
+
+  async updateOrderStatus(id: number, status: string): Promise<Order | null> {
+    const { data, error } = await supabaseAdmin
+      .from("orders")
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error updating order status:", error);
+      return null;
+    }
+    return snakeToCamel(data) as Order;
+  }
+
+  async getOrderItems(orderId: number): Promise<OrderItem[]> {
+    const { data, error } = await supabaseAdmin
+      .from("order_items")
+      .select("*")
+      .eq("order_id", orderId);
+
+    if (error) {
+      console.error("Error fetching order items:", error);
+      return [];
+    }
+    return (data || []).map(snakeToCamel) as OrderItem[];
+  }
+
+  async createOrderItem(item: InsertOrderItem): Promise<OrderItem> {
+    const snakeItem = camelToSnake(item);
+    const { data, error } = await supabaseAdmin
+      .from("order_items")
+      .insert(snakeItem)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error creating order item:", error);
+      throw new Error(error.message);
+    }
+    return snakeToCamel(data) as OrderItem;
   }
 }
