@@ -462,11 +462,14 @@ export async function registerRoutes(
   app.post("/api/subscription-requests", requireSupabaseUser, async (req: any, res) => {
     try {
       const userId = req.supabaseUser?.id;
-      const { fullName, email, phone, country, city, reason } = req.body;
+      const { fullName, email, phone, country, city, reason, plan } = req.body;
       
       if (!fullName || !email || !phone || !country || !city || !reason) {
         return res.status(400).json({ message: "All fields are required" });
       }
+      
+      // Validate plan type
+      const validPlan = ["contributor", "seller"].includes(plan) ? plan : "contributor";
       
       const request = await storage.createSubscriptionRequest({
         userId,
@@ -476,6 +479,7 @@ export async function registerRoutes(
         country,
         city,
         reason,
+        plan: validPlan,
       });
       
       res.status(201).json(request);
@@ -507,9 +511,11 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Request not found" });
       }
       
-      // If approved, grant the user permission to submit profiles
+      // If approved, grant the user appropriate permissions based on plan
       if (status === "approved") {
-        await storage.setUserRole(request.userId, "contributor", true, false);
+        const canSubmitProfiles = true; // Both plans get this
+        const canManageProducts = request.plan === "seller"; // Only seller plan gets shop access
+        await storage.setUserRole(request.userId, "contributor", canSubmitProfiles, canManageProducts);
       }
       
       res.json(request);

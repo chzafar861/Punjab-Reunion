@@ -116,7 +116,7 @@ export const tourInquiries = pgTable("tour_inquiries", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-// Subscription requests for users wanting to become contributors
+// Subscription requests for users wanting to become contributors or sellers
 export const subscriptionRequests = pgTable("subscription_requests", {
   id: serial("id").primaryKey(),
   userId: varchar("user_id").notNull(), // Links to Supabase auth user
@@ -126,6 +126,7 @@ export const subscriptionRequests = pgTable("subscription_requests", {
   country: text("country").notNull(),
   city: text("city").notNull(),
   reason: text("reason").notNull(),
+  plan: varchar("plan").notNull().default("contributor"), // contributor ($20) or seller ($25)
   status: varchar("status").notNull().default("pending"), // pending, approved, rejected
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
