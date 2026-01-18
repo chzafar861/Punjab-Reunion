@@ -40,7 +40,27 @@ async function fetchUser(): Promise<AuthUser | null> {
       profileImageUrl: metadata.avatar_url || metadata.profileImageUrl || null,
     };
 
-    // Try to fetch role from API
+    // Try to fetch role directly from Supabase user_roles table
+    try {
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role, can_submit_profiles, can_manage_products")
+        .eq("user_id", user.id)
+        .single();
+      
+      if (roleData) {
+        return {
+          ...baseUser,
+          role: roleData.role,
+          canSubmitProfiles: roleData.can_submit_profiles || false,
+          canManageProducts: roleData.can_manage_products || false,
+        };
+      }
+    } catch {
+      // No role found, return base user with member role
+    }
+
+    // Fallback: try API for backwards compatibility
     try {
       const response = await fetch("/api/auth/me", {
         headers: {
@@ -57,10 +77,10 @@ async function fetchUser(): Promise<AuthUser | null> {
         };
       }
     } catch {
-      // Ignore API errors, return base user
+      // Ignore API errors
     }
 
-    return baseUser;
+    return { ...baseUser, role: "member" };
   } catch (err) {
     console.warn("Failed to fetch user:", err);
     return null;

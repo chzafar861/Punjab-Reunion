@@ -31,7 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useLocation } from "wouter";
@@ -117,17 +117,54 @@ export default function AdminProducts() {
   }
 
   const { data: products, isLoading, error } = useQuery<Product[]>({
-    queryKey: ["/api/admin/products"],
+    queryKey: ["supabase-products"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      // Transform snake_case to camelCase
+      return (data || []).map((p: any) => ({
+        id: p.id,
+        adminId: p.admin_id,
+        title: p.title,
+        description: p.description,
+        price: p.price,
+        currency: p.currency,
+        category: p.category,
+        imageUrl: p.image_url,
+        status: p.status,
+        inventoryCount: p.inventory_count,
+        createdAt: p.created_at,
+        updatedAt: p.updated_at,
+      }));
+    },
   });
 
   const createProduct = useMutation({
     mutationFn: async (data: ProductFormData) => {
-      const response = await apiRequest("POST", "/api/admin/products", data);
-      return response.json();
+      const { data: product, error } = await supabase
+        .from("products")
+        .insert({
+          admin_id: user?.id || "",
+          title: data.title,
+          description: data.description,
+          price: data.price,
+          currency: data.currency,
+          category: data.category || null,
+          image_url: data.imageUrl || null,
+          status: data.status,
+          inventory_count: data.inventoryCount,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      return product;
     },
     onSuccess: () => {
       toast({ title: "Product created successfully" });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
+      queryClient.invalidateQueries({ queryKey: ["supabase-products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       closeDialog();
     },
@@ -138,12 +175,27 @@ export default function AdminProducts() {
 
   const updateProduct = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<ProductFormData> }) => {
-      const response = await apiRequest("PUT", `/api/admin/products/${id}`, data);
-      return response.json();
+      const { data: product, error } = await supabase
+        .from("products")
+        .update({
+          title: data.title,
+          description: data.description,
+          price: data.price,
+          currency: data.currency,
+          category: data.category || null,
+          image_url: data.imageUrl || null,
+          status: data.status,
+          inventory_count: data.inventoryCount,
+        })
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return product;
     },
     onSuccess: () => {
       toast({ title: "Product updated successfully" });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
+      queryClient.invalidateQueries({ queryKey: ["supabase-products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       closeDialog();
     },
@@ -154,11 +206,15 @@ export default function AdminProducts() {
 
   const deleteProduct = useMutation({
     mutationFn: async (id: number) => {
-      await apiRequest("DELETE", `/api/admin/products/${id}`);
+      const { error } = await supabase
+        .from("products")
+        .delete()
+        .eq("id", id);
+      if (error) throw error;
     },
     onSuccess: () => {
       toast({ title: "Product deleted successfully" });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
+      queryClient.invalidateQueries({ queryKey: ["supabase-products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
     },
     onError: (err: any) => {

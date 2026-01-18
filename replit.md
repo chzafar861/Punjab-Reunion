@@ -85,6 +85,71 @@ The application implements a role-based permission system:
 - `GET /api/auth/me`: Returns user info with role and permissions
 - Admin routes use `requireAdmin` middleware for server-side enforcement
 
+### Supabase Row Level Security (RLS) - REQUIRED for Vercel Deployment
+
+For the admin panel to work securely on Vercel (static deployment), you MUST set up RLS policies in Supabase. The admin pages query Supabase directly from the browser, so RLS policies enforce who can read/write data.
+
+**Required RLS Policies** (run these in Supabase SQL Editor):
+
+```sql
+-- Enable RLS on all admin tables
+ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_roles ENABLE ROW LEVEL SECURITY;
+
+-- Products: Anyone can read published products, only admins can modify
+CREATE POLICY "Anyone can view published products" ON products
+  FOR SELECT USING (status = 'published');
+
+CREATE POLICY "Admins can do everything with products" ON products
+  FOR ALL USING (
+    EXISTS (SELECT 1 FROM user_roles WHERE user_id = auth.uid() AND role = 'admin')
+  );
+
+-- Orders: Users can view their own orders, admins can view/modify all
+CREATE POLICY "Users can view own orders" ON orders
+  FOR SELECT USING (user_id = auth.uid()::text);
+
+CREATE POLICY "Users can create orders" ON orders
+  FOR INSERT WITH CHECK (user_id = auth.uid()::text);
+
+CREATE POLICY "Admins can do everything with orders" ON orders
+  FOR ALL USING (
+    EXISTS (SELECT 1 FROM user_roles WHERE user_id = auth.uid() AND role = 'admin')
+  );
+
+-- Order Items: Users can view their order items, admins can view all
+CREATE POLICY "Users can view own order items" ON order_items
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM orders WHERE orders.id = order_items.order_id AND orders.user_id = auth.uid()::text)
+  );
+
+CREATE POLICY "Users can create order items" ON order_items
+  FOR INSERT WITH CHECK (
+    EXISTS (SELECT 1 FROM orders WHERE orders.id = order_items.order_id AND orders.user_id = auth.uid()::text)
+  );
+
+CREATE POLICY "Admins can do everything with order items" ON order_items
+  FOR ALL USING (
+    EXISTS (SELECT 1 FROM user_roles WHERE user_id = auth.uid() AND role = 'admin')
+  );
+
+-- User Roles: Users can read their own role, only admins can modify
+CREATE POLICY "Users can view own role" ON user_roles
+  FOR SELECT USING (user_id = auth.uid());
+
+CREATE POLICY "Admins can do everything with user roles" ON user_roles
+  FOR ALL USING (
+    EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = auth.uid() AND ur.role = 'admin')
+  );
+```
+
+**Important Notes**:
+- The admin user (chzafar861) must already exist in the `user_roles` table with `role = 'admin'`
+- Without these policies, the admin panel will NOT work on Vercel
+- These policies also protect your data from unauthorized access via the Supabase anon key
+
 ### E-Commerce Shop Feature
 **Database Tables**:
 - `products`: Shop items (title, description, price, images, category, status)

@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useLocation } from "wouter";
@@ -95,7 +95,24 @@ export default function AdminUsers() {
   }
 
   const { data: users, isLoading, error } = useQuery<UserRoleRecord[]>({
-    queryKey: ["/api/admin/users"],
+    queryKey: ["supabase-user-roles"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      // Transform snake_case to camelCase
+      return (data || []).map((u: any) => ({
+        id: u.id,
+        userId: u.user_id,
+        role: u.role,
+        canSubmitProfiles: u.can_submit_profiles,
+        canManageProducts: u.can_manage_products,
+        createdAt: u.created_at,
+        updatedAt: u.updated_at,
+      }));
+    },
   });
 
   const updateRole = useMutation({
@@ -105,16 +122,46 @@ export default function AdminUsers() {
       canSubmitProfiles: boolean;
       canManageProducts: boolean;
     }) => {
-      const response = await apiRequest("POST", `/api/admin/users/${data.userId}/role`, {
-        role: data.role,
-        canSubmitProfiles: data.canSubmitProfiles,
-        canManageProducts: data.canManageProducts,
-      });
-      return response.json();
+      // Check if user role already exists
+      const { data: existing } = await supabase
+        .from("user_roles")
+        .select("id")
+        .eq("user_id", data.userId)
+        .single();
+      
+      if (existing) {
+        // Update existing role
+        const { data: updated, error } = await supabase
+          .from("user_roles")
+          .update({
+            role: data.role,
+            can_submit_profiles: data.canSubmitProfiles,
+            can_manage_products: data.canManageProducts,
+          })
+          .eq("user_id", data.userId)
+          .select()
+          .single();
+        if (error) throw error;
+        return updated;
+      } else {
+        // Insert new role
+        const { data: inserted, error } = await supabase
+          .from("user_roles")
+          .insert({
+            user_id: data.userId,
+            role: data.role,
+            can_submit_profiles: data.canSubmitProfiles,
+            can_manage_products: data.canManageProducts,
+          })
+          .select()
+          .single();
+        if (error) throw error;
+        return inserted;
+      }
     },
     onSuccess: () => {
       toast({ title: "User role updated" });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/users"] });
+      queryClient.invalidateQueries({ queryKey: ["supabase-user-roles"] });
       setShowAddDialog(false);
       setNewUserData({
         userId: "",
