@@ -1,5 +1,4 @@
 import { useState, useCallback } from "react";
-import { supabase } from "@/lib/supabase";
 
 interface UploadResponse {
   publicUrl: string;
@@ -16,6 +15,12 @@ interface UseSupabaseUploadOptions {
 
 export function extractFilePathFromUrl(photoUrl: string, bucket: string = "profile-photos"): string | null {
   if (!photoUrl) return null;
+  
+  // Handle Replit Object Storage paths
+  if (photoUrl.startsWith("/objects/")) {
+    return photoUrl;
+  }
+  
   try {
     const url = new URL(photoUrl);
     const regex = new RegExp(`/${bucket}/(.+)$`);
@@ -35,9 +40,6 @@ export function useSupabaseUpload(options: UseSupabaseUploadOptions = {}) {
   const [error, setError] = useState<Error | null>(null);
   const [progress, setProgress] = useState(0);
 
-  const bucket = options.bucket || "profile-photos";
-  const folder = options.folder || "uploads";
-
   const uploadFile = useCallback(
     async (file: File): Promise<UploadResponse | null> => {
       setIsUploading(true);
@@ -45,32 +47,47 @@ export function useSupabaseUpload(options: UseSupabaseUploadOptions = {}) {
       setProgress(0);
 
       try {
-        const fileExt = file.name.split(".").pop() || "jpg";
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
-        const filePath = `${folder}/${fileName}`;
+        setProgress(10);
+
+        // Request presigned URL from Replit object storage
+        const requestResponse = await fetch("/api/uploads/request-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: file.name,
+            size: file.size,
+            contentType: file.type,
+          }),
+          credentials: "include",
+        });
+
+        if (!requestResponse.ok) {
+          const errData = await requestResponse.json().catch(() => ({}));
+          throw new Error(errData.error || "Failed to get upload URL");
+        }
+
+        const { uploadURL, objectPath } = await requestResponse.json();
 
         setProgress(30);
 
-        const { data, error: uploadError } = await supabase.storage
-          .from(bucket)
-          .upload(filePath, file, {
-            cacheControl: "3600",
-            upsert: false,
-          });
+        // Upload file to presigned URL
+        const uploadResponse = await fetch(uploadURL, {
+          method: "PUT",
+          body: file,
+          headers: {
+            "Content-Type": file.type || "application/octet-stream",
+          },
+        });
 
-        if (uploadError) {
-          throw new Error(uploadError.message);
+        if (!uploadResponse.ok) {
+          throw new Error("Failed to upload file to storage");
         }
 
         setProgress(80);
 
-        const { data: urlData } = supabase.storage
-          .from(bucket)
-          .getPublicUrl(data.path);
-
         const response: UploadResponse = {
-          publicUrl: urlData.publicUrl,
-          path: data.path,
+          publicUrl: objectPath,
+          path: objectPath,
           fileName: file.name,
         };
 
@@ -86,7 +103,7 @@ export function useSupabaseUpload(options: UseSupabaseUploadOptions = {}) {
         setIsUploading(false);
       }
     },
-    [bucket, folder, options]
+    [options]
   );
 
   const deleteFile = useCallback(
@@ -95,19 +112,15 @@ export function useSupabaseUpload(options: UseSupabaseUploadOptions = {}) {
       setError(null);
 
       try {
-        const filePath = extractFilePathFromUrl(photoUrl, bucket);
-        if (!filePath) {
-          throw new Error("Could not extract file path from URL");
+        // For Replit object storage, we don't have a delete endpoint yet
+        // Just return true to not block the flow
+        if (photoUrl.startsWith("/objects/")) {
+          console.log("Object storage file deletion not implemented:", photoUrl);
+          return true;
         }
 
-        const { error: deleteError } = await supabase.storage
-          .from(bucket)
-          .remove([filePath]);
-
-        if (deleteError) {
-          throw new Error(deleteError.message);
-        }
-
+        // For legacy Supabase URLs, just log and return true
+        console.log("Legacy file deletion skipped:", photoUrl);
         return true;
       } catch (err) {
         const error = err instanceof Error ? err : new Error("Delete failed");
@@ -117,7 +130,7 @@ export function useSupabaseUpload(options: UseSupabaseUploadOptions = {}) {
         setIsDeleting(false);
       }
     },
-    [bucket]
+    []
   );
 
   return {

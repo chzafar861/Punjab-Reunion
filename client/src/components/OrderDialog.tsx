@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import type { Product } from "@shared/schema";
 
@@ -27,6 +27,7 @@ export function OrderDialog({ open, onOpenChange, product }: OrderDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [, navigate] = useLocation();
+  const { isAuthenticated } = useAuth();
   const [formData, setFormData] = useState({
     customerName: "",
     customerEmail: "",
@@ -123,18 +124,15 @@ export function OrderDialog({ open, onOpenChange, product }: OrderDialogProps) {
 
     setIsCheckingAuth(true);
     
-    if (isSupabaseConfigured) {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast({
-          title: "Login Required",
-          description: "Please log in to place an order.",
-          variant: "destructive",
-        });
-        setIsCheckingAuth(false);
-        navigate("/login");
-        return;
-      }
+    if (!isAuthenticated) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to place an order.",
+        variant: "destructive",
+      });
+      setIsCheckingAuth(false);
+      navigate("/login");
+      return;
     }
     
     setIsCheckingAuth(false);

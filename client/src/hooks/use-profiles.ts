@@ -1,23 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, type ProfileInput } from "@shared/routes";
-import { supabase } from "@/lib/supabase";
-
-function mapProfileFromDb(row: any) {
-  return {
-    id: row.id,
-    fullName: row.full_name,
-    villageName: row.village_name,
-    district: row.district,
-    yearLeft: row.year_left,
-    currentLocation: row.current_location,
-    story: row.story,
-    photoUrl: row.photo_url,
-    email: row.email,
-    phone: row.phone,
-    userId: row.user_id,
-    createdAt: row.created_at,
-  };
-}
+import { apiRequest } from "@/lib/queryClient";
 
 export function useProfiles(search?: string, district?: string) {
   const queryKey = ['/api/profiles', search, district].filter(Boolean);
@@ -25,27 +8,18 @@ export function useProfiles(search?: string, district?: string) {
   return useQuery({
     queryKey,
     queryFn: async () => {
-      let query = supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const params = new URLSearchParams();
+      if (search) params.set('search', search);
+      if (district) params.set('district', district);
       
-      if (search) {
-        query = query.or(`full_name.ilike.%${search}%,village_name.ilike.%${search}%,district.ilike.%${search}%`);
-      }
+      const url = `/api/profiles${params.toString() ? `?${params.toString()}` : ''}`;
+      const response = await fetch(url, { credentials: 'include' });
       
-      if (district) {
-        query = query.eq('district', district);
-      }
-      
-      const { data, error } = await query;
-      
-      if (error) {
-        console.error('Supabase fetch error:', error);
+      if (!response.ok) {
         throw new Error("Failed to fetch profiles");
       }
       
-      return (data || []).map(mapProfileFromDb);
+      return response.json();
     },
   });
 }
@@ -54,19 +28,14 @@ export function useProfile(id: number) {
   return useQuery({
     queryKey: ['/api/profiles', id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', id)
-        .single();
+      const response = await fetch(`/api/profiles/${id}`, { credentials: 'include' });
       
-      if (error) {
-        if (error.code === 'PGRST116') return null;
-        console.error('Supabase fetch error:', error);
+      if (!response.ok) {
+        if (response.status === 404) return null;
         throw new Error("Failed to fetch profile");
       }
       
-      return data ? mapProfileFromDb(data) : null;
+      return response.json();
     },
     enabled: !!id && !isNaN(id),
   });
@@ -79,33 +48,10 @@ export function useCreateProfile() {
     mutationFn: async (data: ProfileInput) => {
       const validated = api.profiles.create.input.parse(data);
       
-      // Get the current authenticated user's ID
-      const { data: { user } } = await supabase.auth.getUser();
-      const userId = user?.id || null;
-      
-      const { data: result, error } = await supabase
-        .from('profiles')
-        .insert({
-          full_name: validated.fullName,
-          village_name: validated.villageName,
-          district: validated.district,
-          year_left: validated.yearLeft,
-          current_location: validated.currentLocation,
-          story: validated.story,
-          photo_url: validated.photoUrl || null,
-          email: validated.email || null,
-          phone: validated.phone || null,
-          user_id: userId,
-        })
-        .select()
-        .single();
-      
-      if (error) {
-        console.error('Supabase insert error:', error);
-        throw new Error(error.message || "Failed to create profile");
-      }
-      
-      return mapProfileFromDb(result);
+      return apiRequest('/api/profiles', {
+        method: 'POST',
+        body: JSON.stringify(validated),
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/profiles'] });
