@@ -27,7 +27,6 @@ import {
 } from "@/components/ui/select";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useLocation } from "wouter";
@@ -55,51 +54,32 @@ export default function AdminOrders() {
   const isAdmin = user?.role === "admin";
 
   const { data: orders, isLoading, error } = useQuery<Order[]>({
-    queryKey: ["supabase-orders"],
+    queryKey: ["/api/admin/orders"],
     enabled: isAdmin,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      // Transform snake_case to camelCase
-      return (data || []).map((o: any) => ({
-        id: o.id,
-        userId: o.user_id,
-        status: o.status,
-        totalAmount: o.total_amount,
-        currency: o.currency,
-        customerName: o.customer_name,
-        customerEmail: o.customer_email,
-        customerPhone: o.customer_phone,
-        customerPhone2: o.customer_phone_2,
-        country: o.country,
-        province: o.province,
-        city: o.city,
-        streetAddress: o.street_address,
-        shippingAddress: o.shipping_address,
-        notes: o.notes,
-        createdAt: o.created_at,
-        updatedAt: o.updated_at,
-      }));
+      const response = await fetch("/api/admin/orders", { credentials: "include" });
+      if (!response.ok) throw new Error("Failed to fetch orders");
+      return response.json();
     },
   });
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
-      const { data, error } = await supabase
-        .from("orders")
-        .update({ status })
-        .eq("id", id)
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
+      const response = await fetch(`/api/admin/orders/${id}/status`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ status }),
+      });
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.message || "Failed to update order status");
+      }
+      return response.json();
     },
     onSuccess: () => {
       toast({ title: "Order status updated" });
-      queryClient.invalidateQueries({ queryKey: ["supabase-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
     },
     onError: (err: any) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
@@ -108,51 +88,10 @@ export default function AdminOrders() {
 
   const fetchOrderDetails = async (orderId: number) => {
     try {
-      const { data: order, error: orderError } = await supabase
-        .from("orders")
-        .select("*")
-        .eq("id", orderId)
-        .single();
-      if (orderError) throw orderError;
-      
-      const { data: items, error: itemsError } = await supabase
-        .from("order_items")
-        .select("*")
-        .eq("order_id", orderId);
-      if (itemsError) throw itemsError;
-      
-      // Transform snake_case to camelCase
-      const transformedOrder = {
-        id: order.id,
-        userId: order.user_id,
-        status: order.status,
-        totalAmount: order.total_amount,
-        currency: order.currency,
-        customerName: order.customer_name,
-        customerEmail: order.customer_email,
-        customerPhone: order.customer_phone,
-        customerPhone2: order.customer_phone_2,
-        country: order.country,
-        province: order.province,
-        city: order.city,
-        streetAddress: order.street_address,
-        shippingAddress: order.shipping_address,
-        notes: order.notes,
-        createdAt: order.created_at,
-        updatedAt: order.updated_at,
-      };
-      
-      const transformedItems = (items || []).map((item: any) => ({
-        id: item.id,
-        orderId: item.order_id,
-        productId: item.product_id,
-        quantity: item.quantity,
-        unitPrice: item.unit_price,
-        productTitle: item.product_title,
-        createdAt: item.created_at,
-      }));
-      
-      setSelectedOrder({ ...transformedOrder, items: transformedItems });
+      const response = await fetch(`/api/orders/${orderId}`, { credentials: "include" });
+      if (!response.ok) throw new Error("Failed to fetch order details");
+      const orderData = await response.json();
+      setSelectedOrder(orderData);
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }

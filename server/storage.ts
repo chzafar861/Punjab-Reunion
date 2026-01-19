@@ -14,8 +14,9 @@ import {
   type Product,
   type Order,
   type OrderItem,
+  type SubscriptionRequest,
 } from "@shared/schema";
-import { SupabaseStorage } from "./storage.supabase";
+import { DatabaseStorage } from "./storage.database";
 
 export interface IStorage {
   // Profiles
@@ -66,6 +67,12 @@ export interface IStorage {
   updateOrderStatus(id: number, status: string): Promise<Order | null>;
   getOrderItems(orderId: number): Promise<OrderItem[]>;
   createOrderItem(item: InsertOrderItem): Promise<OrderItem>;
+  
+  // Subscription Requests
+  getSubscriptionRequests(): Promise<SubscriptionRequest[]>;
+  getSubscriptionRequest(id: number): Promise<SubscriptionRequest | undefined>;
+  createSubscriptionRequest(request: any): Promise<SubscriptionRequest>;
+  updateSubscriptionRequestStatus(id: number, status: string): Promise<SubscriptionRequest | null>;
 }
 
-export const storage: IStorage = new SupabaseStorage();
+export const storage: IStorage = new DatabaseStorage();

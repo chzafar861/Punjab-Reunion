@@ -5,11 +5,19 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { registerTranslateRoutes } from "./replit_integrations/translate";
-import { requireSupabaseUser, optionalSupabaseUser } from "./middleware/supabaseAuth";
+import { isAuthenticated } from "./replit_integrations/auth";
 
-// Auth middleware that uses Supabase JWT tokens
-const isAuthenticatedCombined: RequestHandler = async (req: any, res, next) => {
-  return requireSupabaseUser(req, res, next);
+// Helper to get user ID from Replit Auth session
+const getUserId = (req: any): string | undefined => {
+  return req.user?.claims?.sub;
+};
+
+// Middleware to require authentication and attach user info
+const requireUser: RequestHandler = (req: any, res, next) => {
+  if (!req.isAuthenticated || !req.isAuthenticated()) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  next();
 };
 
 export async function registerRoutes(
@@ -23,12 +31,21 @@ export async function registerRoutes(
   // Register translation routes for AI-powered content translation
   registerTranslateRoutes(app);
   
-  // Supabase auth endpoint to get current user info (with role)
-  app.get("/api/auth/me", requireSupabaseUser, async (req: any, res) => {
-    const userId = req.supabaseUser?.id;
+  // Auth endpoint to get current user info (with role)
+  app.get("/api/auth/me", isAuthenticated, async (req: any, res) => {
+    const userId = getUserId(req);
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
     const userRole = await storage.getUserRole(userId);
+    const claims = req.user?.claims || {};
     res.json({
-      ...req.supabaseUser,
+      id: userId,
+      email: claims.email || null,
+      username: claims.email?.split('@')[0] || null,
+      firstName: claims.first_name || null,
+      lastName: claims.last_name || null,
+      profileImageUrl: claims.profile_image_url || null,
       role: userRole?.role || "member",
       canSubmitProfiles: userRole?.canSubmitProfiles || false,
       canManageProducts: userRole?.canManageProducts || false,
@@ -48,8 +65,8 @@ export async function registerRoutes(
 
   // One-time setup: Make the current logged-in user an admin
   // This route is protected and only works if there are no admins yet OR if user is already admin
-  app.post("/api/auth/setup-admin", requireSupabaseUser, async (req: any, res) => {
-    const userId = req.supabaseUser?.id;
+  app.post("/api/auth/setup-admin", isAuthenticated, async (req: any, res) => {
+    const userId = getUserId(req);
     
     try {
       // Check if user is already admin or if there are no admins
@@ -79,6 +96,7 @@ export async function registerRoutes(
   });
 
   // Check if username is available (for signup validation)
+  // With Replit Auth, usernames are managed by Replit
   app.get("/api/auth/check-username/:username", async (req, res) => {
     const { username } = req.params;
     
@@ -86,72 +104,8 @@ export async function registerRoutes(
       return res.json({ available: false, message: "Username must be at least 3 characters" });
     }
     
-    try {
-      // Query Supabase admin API to find users with this username in metadata
-      const supabaseUrl = process.env.SUPABASE_URL;
-      const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-      
-      if (!supabaseUrl || !supabaseServiceKey) {
-        // Can't verify - return error to prevent potential duplicates
-        return res.status(503).json({ 
-          available: false, 
-          error: true,
-          message: "Username validation temporarily unavailable" 
-        });
-      }
-      
-      // Fetch users with pagination to handle larger user bases
-      let allUsers: any[] = [];
-      let page = 1;
-      const perPage = 1000;
-      let hasMore = true;
-      
-      while (hasMore) {
-        const response = await fetch(`${supabaseUrl}/auth/v1/admin/users?page=${page}&per_page=${perPage}`, {
-          headers: {
-            'Authorization': `Bearer ${supabaseServiceKey}`,
-            'apikey': supabaseServiceKey,
-          },
-        });
-        
-        if (!response.ok) {
-          console.error("Failed to fetch users for username check");
-          return res.status(503).json({ 
-            available: false, 
-            error: true,
-            message: "Username validation temporarily unavailable" 
-          });
-        }
-        
-        const data = await response.json();
-        const users = data.users || [];
-        allUsers = allUsers.concat(users);
-        
-        // Check if we got fewer users than requested, meaning no more pages
-        hasMore = users.length === perPage;
-        page++;
-        
-        // Safety limit to prevent infinite loops
-        if (page > 100) break;
-      }
-      
-      // Check if any user has this username in their metadata (case-insensitive)
-      const usernameExists = allUsers.some((user: any) => 
-        user.user_metadata?.username?.toLowerCase() === username.toLowerCase()
-      );
-      
-      res.json({ 
-        available: !usernameExists,
-        message: usernameExists ? "Username is already taken" : "Username is available"
-      });
-    } catch (err) {
-      console.error("Username check error:", err);
-      return res.status(503).json({ 
-        available: false, 
-        error: true,
-        message: "Username validation temporarily unavailable" 
-      });
-    }
+    // With Replit Auth, username uniqueness is handled by Replit
+    res.json({ available: true, message: "Username is available" });
   });
   
   // === PROFILES ===
@@ -196,9 +150,9 @@ export async function registerRoutes(
   });
 
   // Protected: Create profile (requires login and submission permission)
-  app.post(api.profiles.create.path, requireSupabaseUser, async (req: any, res) => {
+  app.post(api.profiles.create.path, isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.supabaseUser?.id;
+      const userId = getUserId(req);
       
       // Check if user has permission to submit profiles
       const userRole = await storage.getUserRole(userId);
@@ -236,8 +190,8 @@ export async function registerRoutes(
   });
 
   // Protected: Get current user's profiles (includes private fields since it's their own data)
-  app.get("/api/my-profiles", requireSupabaseUser, async (req: any, res) => {
-    const userId = req.supabaseUser?.id;
+  app.get("/api/my-profiles", isAuthenticated, async (req: any, res) => {
+    const userId = getUserId(req);
     console.log("[my-profiles] User ID from token:", userId);
     const userProfiles = await storage.getProfilesByUserId(userId);
     console.log("[my-profiles] Found profiles:", userProfiles.length);
@@ -246,9 +200,9 @@ export async function registerRoutes(
   });
 
   // Protected: Update profile (only owner can update)
-  app.put("/api/profiles/:id", requireSupabaseUser, async (req: any, res) => {
+  app.put("/api/profiles/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.supabaseUser?.id;
+      const userId = getUserId(req);
       const profileId = Number(req.params.id);
       const input = api.profiles.create.input.partial().parse(req.body);
       const updated = await storage.updateProfile(profileId, userId, input);
@@ -268,8 +222,8 @@ export async function registerRoutes(
   });
 
   // Protected: Delete profile (only owner can delete) - also deletes photo from storage
-  app.delete("/api/profiles/:id", requireSupabaseUser, async (req: any, res) => {
-    const userId = req.supabaseUser?.id;
+  app.delete("/api/profiles/:id", isAuthenticated, async (req: any, res) => {
+    const userId = getUserId(req);
     const profileId = Number(req.params.id);
     
     // First get the profile to retrieve the photo URL for cleanup
@@ -363,13 +317,13 @@ export async function registerRoutes(
   });
 
   // Create comment - optionally authenticated (stores userId if logged in)
-  app.post("/api/profiles/:profileId/comments", optionalSupabaseUser, async (req: any, res) => {
+  app.post("/api/profiles/:profileId/comments", async (req: any, res) => {
     try {
       const profileId = Number(req.params.profileId);
       const input = api.comments.create.input.parse({ ...req.body, profileId });
       
-      // Use Supabase user ID if authenticated
-      const userId = req.supabaseUser?.id;
+      // Use user ID if authenticated
+      const userId = getUserId(req);
       
       const comment = await storage.createProfileComment({ ...input, userId });
       res.status(201).json(comment);
@@ -385,9 +339,9 @@ export async function registerRoutes(
   });
 
   // Protected: Update comment (only owner can update)
-  app.put("/api/comments/:id", requireSupabaseUser, async (req: any, res) => {
+  app.put("/api/comments/:id", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.supabaseUser?.id;
+      const userId = getUserId(req);
       const commentId = Number(req.params.id);
       const { content } = req.body;
       
@@ -406,7 +360,7 @@ export async function registerRoutes(
   });
 
   // Protected: Delete comment (only owner can delete)
-  app.delete("/api/comments/:id", requireSupabaseUser, async (req: any, res) => {
+  app.delete("/api/comments/:id", isAuthenticated, async (req: any, res) => {
     const userId = req.supabaseUser?.id;
     const commentId = Number(req.params.id);
     const deleted = await storage.deleteProfileComment(commentId, userId);
@@ -433,13 +387,13 @@ export async function registerRoutes(
   };
 
   // Admin: Get all user roles
-  app.get("/api/admin/users", requireSupabaseUser, requireAdmin, async (req: any, res) => {
+  app.get("/api/admin/users", isAuthenticated, requireAdmin, async (req: any, res) => {
     const roles = await storage.getAllUserRoles();
     res.json(roles);
   });
 
   // Admin: Set user role
-  app.post("/api/admin/users/:userId/role", requireSupabaseUser, requireAdmin, async (req: any, res) => {
+  app.post("/api/admin/users/:userId/role", isAuthenticated, requireAdmin, async (req: any, res) => {
     const { userId } = req.params;
     const { role, canSubmitProfiles, canManageProducts } = req.body;
     
@@ -459,9 +413,9 @@ export async function registerRoutes(
   // ========== SUBSCRIPTION REQUESTS ==========
   
   // Protected: Create subscription request
-  app.post("/api/subscription-requests", requireSupabaseUser, async (req: any, res) => {
+  app.post("/api/subscription-requests", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.supabaseUser?.id;
+      const userId = getUserId(req);
       const { fullName, email, phone, country, city, reason, plan } = req.body;
       
       if (!fullName || !email || !phone || !country || !city || !reason) {
@@ -490,13 +444,13 @@ export async function registerRoutes(
   });
 
   // Admin: Get all subscription requests
-  app.get("/api/admin/subscription-requests", requireSupabaseUser, requireAdmin, async (req: any, res) => {
+  app.get("/api/admin/subscription-requests", isAuthenticated, requireAdmin, async (req: any, res) => {
     const requests = await storage.getSubscriptionRequests();
     res.json(requests);
   });
 
   // Admin: Update subscription request status and grant permission
-  app.put("/api/admin/subscription-requests/:id", requireSupabaseUser, requireAdmin, async (req: any, res) => {
+  app.put("/api/admin/subscription-requests/:id", isAuthenticated, requireAdmin, async (req: any, res) => {
     try {
       const requestId = Number(req.params.id);
       const { status } = req.body;
@@ -547,7 +501,7 @@ export async function registerRoutes(
   });
 
   // Admin: Get all products (including drafts)
-  app.get("/api/admin/products", requireSupabaseUser, requireAdmin, async (req: any, res) => {
+  app.get("/api/admin/products", isAuthenticated, requireAdmin, async (req: any, res) => {
     const { status, category } = req.query;
     const products = await storage.getProducts(
       status as string,
@@ -557,9 +511,9 @@ export async function registerRoutes(
   });
 
   // Admin: Create product
-  app.post("/api/admin/products", requireSupabaseUser, requireAdmin, async (req: any, res) => {
+  app.post("/api/admin/products", isAuthenticated, requireAdmin, async (req: any, res) => {
     try {
-      const userId = req.supabaseUser?.id;
+      const userId = getUserId(req);
       const { title, description, price, currency, category, imageUrl, status, inventoryCount } = req.body;
       
       if (!title || !description || price === undefined) {
@@ -584,9 +538,9 @@ export async function registerRoutes(
   });
 
   // Admin: Update product
-  app.put("/api/admin/products/:id", requireSupabaseUser, requireAdmin, async (req: any, res) => {
+  app.put("/api/admin/products/:id", isAuthenticated, requireAdmin, async (req: any, res) => {
     try {
-      const userId = req.supabaseUser?.id;
+      const userId = getUserId(req);
       const productId = Number(req.params.id);
       const updateData = req.body;
       
@@ -605,7 +559,7 @@ export async function registerRoutes(
   });
 
   // Admin: Delete product
-  app.delete("/api/admin/products/:id", requireSupabaseUser, requireAdmin, async (req: any, res) => {
+  app.delete("/api/admin/products/:id", isAuthenticated, requireAdmin, async (req: any, res) => {
     const userId = req.supabaseUser?.id;
     const productId = Number(req.params.id);
     const deleted = await storage.deleteProduct(productId, userId);
@@ -618,14 +572,14 @@ export async function registerRoutes(
   // ========== ORDER ROUTES ==========
 
   // Protected: Get user's orders
-  app.get("/api/my-orders", requireSupabaseUser, async (req: any, res) => {
+  app.get("/api/my-orders", isAuthenticated, async (req: any, res) => {
     const userId = req.supabaseUser?.id;
     const orders = await storage.getOrders(userId);
     res.json(orders);
   });
 
   // Protected: Get single order (user can only see their own)
-  app.get("/api/orders/:id", requireSupabaseUser, async (req: any, res) => {
+  app.get("/api/orders/:id", isAuthenticated, async (req: any, res) => {
     const userId = req.supabaseUser?.id;
     const order = await storage.getOrder(Number(req.params.id));
     if (!order) {
@@ -643,9 +597,9 @@ export async function registerRoutes(
   });
 
   // Protected: Create order
-  app.post("/api/orders", requireSupabaseUser, async (req: any, res) => {
+  app.post("/api/orders", isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.supabaseUser?.id;
+      const userId = getUserId(req);
       const { 
         customerName, customerEmail, customerPhone, customerPhone2,
         country, province, city, streetAddress, notes, items 
@@ -707,13 +661,13 @@ export async function registerRoutes(
   });
 
   // Admin: Get all orders
-  app.get("/api/admin/orders", requireSupabaseUser, requireAdmin, async (req: any, res) => {
+  app.get("/api/admin/orders", isAuthenticated, requireAdmin, async (req: any, res) => {
     const orders = await storage.getOrders();
     res.json(orders);
   });
 
   // Admin: Update order status
-  app.put("/api/admin/orders/:id/status", requireSupabaseUser, requireAdmin, async (req: any, res) => {
+  app.put("/api/admin/orders/:id/status", isAuthenticated, requireAdmin, async (req: any, res) => {
     const orderId = Number(req.params.id);
     const { status } = req.body;
     

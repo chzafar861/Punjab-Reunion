@@ -13,7 +13,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Crown, FileText, Users, Globe, Send, Loader2, ShoppingBag, Check } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import { useLocation } from "wouter";
 
 const subscriptionRequestSchema = z.object({
@@ -57,22 +56,24 @@ export default function SubscriptionRequest() {
         throw new Error("You must be logged in to submit a request");
       }
       
-      const { error } = await supabase
-        .from("subscription_requests")
-        .insert({
-          user_id: user.id,
-          full_name: data.fullName,
+      const response = await fetch("/api/subscription-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          fullName: data.fullName,
           email: data.email,
           phone: data.phone,
           country: data.country,
           city: data.city,
           reason: data.reason,
           plan: data.plan,
-          status: "pending",
-        });
+        }),
+      });
       
-      if (error) {
-        throw new Error(error.message);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to submit request");
       }
       
       return { success: true };

@@ -2,21 +2,17 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
-import { supabaseAdmin } from "./lib/supabase";
+import { db } from "./db";
 
 const app = express();
 const httpServer = createServer(app);
 
-async function verifySupabaseConnection() {
+async function verifyDatabaseConnection() {
   try {
-    const { data, error } = await supabaseAdmin.from('profiles').select('id').limit(1);
-    if (error) {
-      console.warn("Supabase connection warning:", error.message);
-    } else {
-      console.log("Supabase connection verified successfully");
-    }
+    await db.execute("SELECT 1");
+    console.log("Database connection verified successfully");
   } catch (err) {
-    console.error("Error connecting to Supabase:", err);
+    console.error("Error connecting to database:", err);
   }
 }
 
@@ -74,7 +70,7 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  await verifySupabaseConnection();
+  await verifyDatabaseConnection();
   
   await registerRoutes(httpServer, app);
 

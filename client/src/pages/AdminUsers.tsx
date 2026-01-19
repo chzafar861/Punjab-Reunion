@@ -31,7 +31,6 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useLocation } from "wouter";
@@ -95,23 +94,11 @@ export default function AdminUsers() {
   }
 
   const { data: users, isLoading, error } = useQuery<UserRoleRecord[]>({
-    queryKey: ["supabase-user-roles"],
+    queryKey: ["user-roles"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      // Transform snake_case to camelCase
-      return (data || []).map((u: any) => ({
-        id: u.id,
-        userId: u.user_id,
-        role: u.role,
-        canSubmitProfiles: u.can_submit_profiles,
-        canManageProducts: u.can_manage_products,
-        createdAt: u.created_at,
-        updatedAt: u.updated_at,
-      }));
+      const response = await fetch("/api/admin/users", { credentials: "include" });
+      if (!response.ok) throw new Error("Failed to fetch user roles");
+      return response.json();
     },
   });
 
@@ -122,46 +109,25 @@ export default function AdminUsers() {
       canSubmitProfiles: boolean;
       canManageProducts: boolean;
     }) => {
-      // Check if user role already exists
-      const { data: existing } = await supabase
-        .from("user_roles")
-        .select("id")
-        .eq("user_id", data.userId)
-        .single();
-      
-      if (existing) {
-        // Update existing role
-        const { data: updated, error } = await supabase
-          .from("user_roles")
-          .update({
-            role: data.role,
-            can_submit_profiles: data.canSubmitProfiles,
-            can_manage_products: data.canManageProducts,
-          })
-          .eq("user_id", data.userId)
-          .select()
-          .single();
-        if (error) throw error;
-        return updated;
-      } else {
-        // Insert new role
-        const { data: inserted, error } = await supabase
-          .from("user_roles")
-          .insert({
-            user_id: data.userId,
-            role: data.role,
-            can_submit_profiles: data.canSubmitProfiles,
-            can_manage_products: data.canManageProducts,
-          })
-          .select()
-          .single();
-        if (error) throw error;
-        return inserted;
+      const response = await fetch(`/api/admin/users/${data.userId}/role`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          role: data.role,
+          canSubmitProfiles: data.canSubmitProfiles,
+          canManageProducts: data.canManageProducts,
+        }),
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update role");
       }
+      return response.json();
     },
     onSuccess: () => {
       toast({ title: "User role updated" });
-      queryClient.invalidateQueries({ queryKey: ["supabase-user-roles"] });
+      queryClient.invalidateQueries({ queryKey: ["user-roles"] });
       setShowAddDialog(false);
       setNewUserData({
         userId: "",

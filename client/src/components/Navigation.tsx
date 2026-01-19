@@ -163,15 +163,14 @@ export function Navigation() {
                     )}
                     <DropdownMenuSeparator />
                     <DropdownMenuItem asChild>
-                      <button
-                        type="button"
-                        onClick={() => logout(undefined, { onSuccess: () => setLocation("/") })}
-                        className="cursor-pointer w-full text-left"
+                      <a
+                        href="/api/logout"
+                        className="cursor-pointer w-full text-left flex items-center"
                         data-testid="button-logout"
                       >
                         <LogOut className="mr-2 h-4 w-4" />
                         {t("nav.logout")}
-                      </button>
+                      </a>
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -293,18 +292,14 @@ export function Navigation() {
               )}
               <div className="pt-2 border-t border-border flex items-center justify-between">
                 {isAuthenticated ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      logout(undefined, { onSuccess: () => setLocation("/") });
-                      setIsOpen(false);
-                    }}
+                  <a
+                    href="/api/logout"
                     className="text-lg font-medium py-2 text-secondary flex items-center gap-2 text-left"
                     data-testid="button-mobile-logout"
                   >
                     <LogOut className="h-5 w-5" />
                     {t("nav.logout")}
-                  </button>
+                  </a>
                 ) : (
                   <div className="flex gap-4">
                     <Link 

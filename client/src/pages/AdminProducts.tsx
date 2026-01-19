@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect, useRef } from "react";
 import { Plus, Edit, Trash2, Package, Eye, EyeOff, Loader2, Upload, X, ImageIcon } from "lucide-react";
-import { useSupabaseUpload, extractFilePathFromUrl } from "@/hooks/use-supabase-upload";
+import { useUpload } from "@/hooks/use-upload";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +31,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useLocation } from "wouter";
@@ -72,9 +71,7 @@ export default function AdminProducts() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   
-  const { uploadFile, deleteFile, isUploading, progress } = useSupabaseUpload({
-    bucket: "profile-photos",
-    folder: "products",
+  const { uploadFile, isUploading, progress } = useUpload({
     onError: (err) => {
       toast({ title: "Upload Error", description: err.message, variant: "destructive" });
     },
@@ -117,54 +114,40 @@ export default function AdminProducts() {
   }
 
   const { data: products, isLoading, error } = useQuery<Product[]>({
-    queryKey: ["supabase-products"],
+    queryKey: ["/api/admin/products"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      // Transform snake_case to camelCase
-      return (data || []).map((p: any) => ({
-        id: p.id,
-        adminId: p.admin_id,
-        title: p.title,
-        description: p.description,
-        price: p.price,
-        currency: p.currency,
-        category: p.category,
-        imageUrl: p.image_url,
-        status: p.status,
-        inventoryCount: p.inventory_count,
-        createdAt: p.created_at,
-        updatedAt: p.updated_at,
-      }));
+      const response = await fetch("/api/admin/products", { credentials: "include" });
+      if (!response.ok) throw new Error("Failed to fetch products");
+      return response.json();
     },
   });
 
   const createProduct = useMutation({
     mutationFn: async (data: ProductFormData) => {
-      const { data: product, error } = await supabase
-        .from("products")
-        .insert({
-          admin_id: user?.id || "",
+      const response = await fetch("/api/admin/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
           title: data.title,
           description: data.description,
           price: data.price,
           currency: data.currency,
           category: data.category || null,
-          image_url: data.imageUrl || null,
+          imageUrl: data.imageUrl || null,
           status: data.status,
-          inventory_count: data.inventoryCount,
-        })
-        .select()
-        .single();
-      if (error) throw error;
-      return product;
+          inventoryCount: data.inventoryCount,
+        }),
+      });
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.message || "Failed to create product");
+      }
+      return response.json();
     },
     onSuccess: () => {
       toast({ title: "Product created successfully" });
-      queryClient.invalidateQueries({ queryKey: ["supabase-products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       closeDialog();
     },
@@ -175,27 +158,30 @@ export default function AdminProducts() {
 
   const updateProduct = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<ProductFormData> }) => {
-      const { data: product, error } = await supabase
-        .from("products")
-        .update({
+      const response = await fetch(`/api/admin/products/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
           title: data.title,
           description: data.description,
           price: data.price,
           currency: data.currency,
           category: data.category || null,
-          image_url: data.imageUrl || null,
+          imageUrl: data.imageUrl || null,
           status: data.status,
-          inventory_count: data.inventoryCount,
-        })
-        .eq("id", id)
-        .select()
-        .single();
-      if (error) throw error;
-      return product;
+          inventoryCount: data.inventoryCount,
+        }),
+      });
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.message || "Failed to update product");
+      }
+      return response.json();
     },
     onSuccess: () => {
       toast({ title: "Product updated successfully" });
-      queryClient.invalidateQueries({ queryKey: ["supabase-products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       closeDialog();
     },
@@ -206,15 +192,18 @@ export default function AdminProducts() {
 
   const deleteProduct = useMutation({
     mutationFn: async (id: number) => {
-      const { error } = await supabase
-        .from("products")
-        .delete()
-        .eq("id", id);
-      if (error) throw error;
+      const response = await fetch(`/api/admin/products/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.message || "Failed to delete product");
+      }
     },
     onSuccess: () => {
       toast({ title: "Product deleted successfully" });
-      queryClient.invalidateQueries({ queryKey: ["supabase-products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
     },
     onError: (err: any) => {
@@ -296,7 +285,7 @@ export default function AdminProducts() {
       if (!uploadResult) {
         return;
       }
-      finalImageUrl = uploadResult.publicUrl;
+      finalImageUrl = uploadResult.objectPath;
     }
     
     const submitData = { ...formData, imageUrl: finalImageUrl };

@@ -1,6 +1,4 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase, isSupabaseConfigured } from "@/lib/supabase";
-import { useEffect } from "react";
 
 export interface AuthUser {
   id: string;
@@ -16,71 +14,57 @@ export interface AuthUser {
 }
 
 async function fetchUser(): Promise<AuthUser | null> {
-  if (!isSupabaseConfigured) {
-    return null;
-  }
-  
   try {
-    const { data: { session } } = await supabase.auth.getSession();
+    const response = await fetch("/api/auth/user", {
+      credentials: "include",
+    });
     
-    if (!session?.user) {
-      return null;
+    if (!response.ok) {
+      if (response.status === 401) {
+        return null;
+      }
+      throw new Error("Failed to fetch user");
     }
-
-    const user = session.user;
-    const metadata = user.user_metadata || {};
-
-    const baseUser: AuthUser = {
+    
+    const user = await response.json();
+    if (!user) return null;
+    
+    // Get additional role info
+    try {
+      const meResponse = await fetch("/api/auth/me", {
+        credentials: "include",
+      });
+      if (meResponse.ok) {
+        const meData = await meResponse.json();
+        return {
+          id: user.id,
+          email: user.email || null,
+          username: user.email?.split('@')[0] || user.firstName || null,
+          firstName: user.firstName || null,
+          lastName: user.lastName || null,
+          emailVerified: true,
+          profileImageUrl: user.profileImageUrl || null,
+          role: meData.role || "member",
+          canSubmitProfiles: meData.canSubmitProfiles || false,
+          canManageProducts: meData.canManageProducts || false,
+        };
+      }
+    } catch {
+      // Role fetch failed, return base user
+    }
+    
+    return {
       id: user.id,
       email: user.email || null,
-      username: metadata.username || null,
-      firstName: metadata.first_name || metadata.firstName || null,
-      lastName: metadata.last_name || metadata.lastName || null,
-      emailVerified: user.email_confirmed_at ? true : false,
-      profileImageUrl: metadata.avatar_url || metadata.profileImageUrl || null,
+      username: user.email?.split('@')[0] || user.firstName || null,
+      firstName: user.firstName || null,
+      lastName: user.lastName || null,
+      emailVerified: true,
+      profileImageUrl: user.profileImageUrl || null,
+      role: "member",
+      canSubmitProfiles: false,
+      canManageProducts: false,
     };
-
-    // Try to fetch role directly from Supabase user_roles table
-    try {
-      const { data: roleData } = await supabase
-        .from("user_roles")
-        .select("role, can_submit_profiles, can_manage_products")
-        .eq("user_id", user.id)
-        .single();
-      
-      if (roleData) {
-        return {
-          ...baseUser,
-          role: roleData.role,
-          canSubmitProfiles: roleData.can_submit_profiles || false,
-          canManageProducts: roleData.can_manage_products || false,
-        };
-      }
-    } catch {
-      // No role found, return base user with member role
-    }
-
-    // Fallback: try API for backwards compatibility
-    try {
-      const response = await fetch("/api/auth/me", {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-      if (response.ok) {
-        const apiUser = await response.json();
-        return {
-          ...baseUser,
-          role: apiUser.role,
-          canSubmitProfiles: apiUser.canSubmitProfiles,
-          canManageProducts: apiUser.canManageProducts,
-        };
-      }
-    } catch {
-      // Ignore API errors
-    }
-
-    return { ...baseUser, role: "member" };
   } catch (err) {
     console.warn("Failed to fetch user:", err);
     return null;
@@ -88,46 +72,27 @@ async function fetchUser(): Promise<AuthUser | null> {
 }
 
 async function logout(): Promise<void> {
-  if (isSupabaseConfigured) {
-    await supabase.auth.signOut();
-  }
+  window.location.href = "/api/logout";
 }
 
 export function useAuth() {
   const queryClient = useQueryClient();
   
   const { data: user, isLoading, isFetched, refetch } = useQuery<AuthUser | null>({
-    queryKey: ["supabase-auth"],
+    queryKey: ["replit-auth"],
     queryFn: fetchUser,
     retry: false,
     staleTime: 1000 * 60 * 5,
   });
 
-  useEffect(() => {
-    if (!isSupabaseConfigured) return;
-    
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        // Refetch user data to include role information from API
-        queryClient.invalidateQueries({ queryKey: ["supabase-auth"] });
-      } else {
-        queryClient.setQueryData(["supabase-auth"], null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [queryClient]);
-
   const logoutMutation = useMutation({
     mutationFn: logout,
     onSuccess: () => {
-      queryClient.setQueryData(["supabase-auth"], null);
+      queryClient.setQueryData(["replit-auth"], null);
     },
   });
 
-  // authReady is true when auth state has been determined (loaded at least once)
-  // This ensures consistent behavior across dev/prod environments
-  const authReady = isFetched || !isSupabaseConfigured;
+  const authReady = isFetched;
 
   return {
     user,
