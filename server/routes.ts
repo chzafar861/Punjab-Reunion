@@ -5,7 +5,7 @@ import { api } from "@shared/routes";
 import { z } from "zod";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { registerTranslateRoutes } from "./replit_integrations/translate";
-import { isAuthenticated } from "./replit_integrations/auth";
+import { isAuthenticated, setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
 
 // Helper to get user ID from Replit Auth session
 const getUserId = (req: any): string | undefined => {
@@ -24,6 +24,12 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+  
+  // Setup Replit Auth (must be first to register /api/login, /api/callback, /api/logout)
+  await setupAuth(app);
+  
+  // Register auth routes for /api/auth/user endpoint
+  registerAuthRoutes(app);
   
   // Register object storage routes for file uploads
   registerObjectStorageRoutes(app);
