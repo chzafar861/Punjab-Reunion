@@ -21,17 +21,19 @@ import { useQuery } from "@tanstack/react-query";
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
   const [location, setLocation] = useLocation();
-  const { user, isAuthenticated, isLoading, logout, isLoggingOut } = useAuth();
+  const { user, isAuthenticated, isLoading, authReady, logout, isLoggingOut } = useAuth();
   const { t } = useLanguage();
   const { toast } = useToast();
   const [settingUpAdmin, setSettingUpAdmin] = useState(false);
   
   // Check if any admin exists - only show "Become Admin" if NO admins exist
-  const { data: hasAdminData } = useQuery<{ hasAdmin: boolean }>({
+  // Wait for auth to be ready before checking to ensure consistent behavior
+  const { data: hasAdminData, isFetched: adminCheckDone } = useQuery<{ hasAdmin: boolean }>({
     queryKey: ["/api/auth/has-admin"],
     staleTime: 60000, // Cache for 1 minute
+    enabled: authReady, // Only check after auth is ready
   });
-  const systemHasAdmin = hasAdminData?.hasAdmin ?? true; // Default to true to hide button
+  const systemHasAdmin = !adminCheckDone || (hasAdminData?.hasAdmin ?? true); // Default to true to hide button until checked
   
   const handleBecomeAdmin = async () => {
     setSettingUpAdmin(true);

@@ -96,7 +96,7 @@ async function logout(): Promise<void> {
 export function useAuth() {
   const queryClient = useQueryClient();
   
-  const { data: user, isLoading, refetch } = useQuery<AuthUser | null>({
+  const { data: user, isLoading, isFetched, refetch } = useQuery<AuthUser | null>({
     queryKey: ["supabase-auth"],
     queryFn: fetchUser,
     retry: false,
@@ -125,9 +125,14 @@ export function useAuth() {
     },
   });
 
+  // authReady is true when auth state has been determined (loaded at least once)
+  // This ensures consistent behavior across dev/prod environments
+  const authReady = isFetched || !isSupabaseConfigured;
+
   return {
     user,
     isLoading,
+    authReady,
     isAuthenticated: !!user,
     logout: logoutMutation.mutate,
     isLoggingOut: logoutMutation.isPending,
