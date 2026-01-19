@@ -7,10 +7,8 @@ export function useCreateInquiry() {
     mutationFn: async (data: InquiryInput) => {
       const validated = api.inquiries.create.input.parse(data);
       
-      return apiRequest('/api/inquiries', {
-        method: 'POST',
-        body: JSON.stringify(validated),
-      });
+      const response = await apiRequest('POST', '/api/inquiries', validated);
+      return response.json();
     },
   });
 }

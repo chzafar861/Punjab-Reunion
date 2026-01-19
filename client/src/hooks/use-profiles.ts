@@ -48,10 +48,8 @@ export function useCreateProfile() {
     mutationFn: async (data: ProfileInput) => {
       const validated = api.profiles.create.input.parse(data);
       
-      return apiRequest('/api/profiles', {
-        method: 'POST',
-        body: JSON.stringify(validated),
-      });
+      const response = await apiRequest('POST', '/api/profiles', validated);
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/profiles'] });

@@ -7,10 +7,8 @@ export function useCreateTourInquiry() {
     mutationFn: async (data: TourInquiryInput) => {
       const validated = api.tours.create.input.parse(data);
       
-      return apiRequest('/api/tour-inquiries', {
-        method: 'POST',
-        body: JSON.stringify(validated),
-      });
+      const response = await apiRequest('POST', '/api/tour-inquiries', validated);
+      return response.json();
     },
   });
 }

@@ -7,7 +7,7 @@ A heritage tracing web application designed to help families reconnect with thei
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
-Deployment target: Vercel with Supabase database
+Deployment target: Replit (self-contained with built-in PostgreSQL and Replit Auth)
 
 ## System Architecture
 
@@ -20,27 +20,25 @@ Deployment target: Vercel with Supabase database
 - **Animations**: Framer Motion for page transitions and scroll reveals
 - **Forms**: React Hook Form with Zod validation via @hookform/resolvers
 - **Typography**: Playfair Display (serif headings) + Lato (sans body text)
-- **Authentication**: Supabase Auth (@supabase/supabase-js)
+- **Authentication**: Replit Auth (OIDC-based)
 
 ### Backend Architecture
 - **Runtime**: Node.js with Express
 - **Language**: TypeScript (ESM modules)
 - **API Structure**: RESTful endpoints defined in shared/routes.ts with Zod schemas
-- **Authentication**: Supabase JWT verification middleware
+- **Authentication**: Replit Auth with session-based authentication (express-session)
 - **Build Tool**: Vite for frontend, esbuild for server bundling
 
 ### Data Storage
-- **Database**: Supabase PostgreSQL via REST API (supabase-js client)
-- **Storage Layer**: `server/storage.supabase.ts` implements IStorage interface using Supabase REST API
-- **File Storage**: Replit Object Storage for profile photo uploads (`server/replit_integrations/object_storage/`)
+- **Database**: Replit's built-in PostgreSQL via Drizzle ORM
+- **Storage Layer**: `server/storage.database.ts` implements IStorage interface using Drizzle ORM
+- **File Storage**: Replit Object Storage for profile photo and product image uploads (`server/replit_integrations/object_storage/`)
 - **Schema Location**: shared/schema.ts (profiles, inquiries, tour_inquiries, profile_comments tables)
-- **Note**: Direct PostgreSQL connections are NOT used - all database operations go through Supabase REST API for reliability
 
 ### Photo URL Handling
 Profile photos support multiple URL formats:
-- **Supabase Storage**: Primary storage via `profile-photos` bucket in Supabase Storage
+- **Replit Object Storage**: Primary storage via `/objects/` path
 - **External URLs**: Direct URLs to external images (e.g., Unsplash)
-- **Replit Object Storage**: Legacy URLs containing `/objects/` path
 
 **Profile Photo Management (MyProfiles Edit Form)**:
 - Uses session token system (`editSessionTokenRef`) to prevent race conditions
@@ -52,22 +50,22 @@ Profile photos support multiple URL formats:
 
 **Photo Upload Flow**:
 1. `handleFileChange` captures session token before starting upload
-2. After upload: compares captured token vs current token
-3. If mismatch: upload is stale → delete from storage and exit
-4. If match: update form state and add to uploadedPhotos array
-5. On save: delete old photo (if changed) and orphaned uploads (not the saved one)
+2. Request presigned URL from `/api/uploads/request-url`
+3. Upload file to presigned URL
+4. Receive objectPath (e.g., `/objects/uploads/uuid`)
+5. Use objectPath as the image URL (served by `/objects/*` route)
 
 ### Authentication Flow
-- Frontend uses @supabase/supabase-js for signup/login/logout
-- Backend validates Supabase JWT tokens via middleware
-- Protected routes require Authorization header with Bearer token
-- User ID from Supabase is used for profile/comment ownership
+- Frontend redirects to `/api/login` for login (Replit Auth OIDC flow)
+- Backend validates session via express-session middleware
+- Protected routes check `req.isAuthenticated()` or `req.user`
+- User ID from Replit Auth is used for profile/comment ownership
 
 ### Role-Based Access Control (RBAC)
 The application implements a role-based permission system:
 
 **Database Table**: `user_roles`
-- `user_id`: References Supabase auth user
+- `user_id`: References Replit Auth user ID
 - `role`: "admin" | "contributor" | "member"
 - `can_submit_profiles`: Boolean for profile submission permission
 - `can_manage_products`: Boolean for product management permission
@@ -82,86 +80,11 @@ The application implements a role-based permission system:
 - Admin Dashboard: Requires admin role (Products, Orders, Users management)
 
 **API Endpoints**:
+- `GET /api/auth/user`: Returns current user from session
 - `GET /api/auth/me`: Returns user info with role and permissions
+- `GET /api/login`: Redirects to Replit Auth login
+- `GET /api/logout`: Logs out and redirects to home
 - Admin routes use `requireAdmin` middleware for server-side enforcement
-
-### Supabase Row Level Security (RLS) - REQUIRED for Vercel Deployment
-
-For the admin panel to work securely on Vercel (static deployment), you MUST set up RLS policies in Supabase. The admin pages query Supabase directly from the browser, so RLS policies enforce who can read/write data.
-
-**Required RLS Policies** (run these in Supabase SQL Editor):
-
-```sql
--- Enable RLS on all tables
-ALTER TABLE products ENABLE ROW LEVEL SECURITY;
-ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
-ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_roles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE subscription_requests ENABLE ROW LEVEL SECURITY;
-
--- Products: Anyone can read published products, only admins can modify
-CREATE POLICY "Anyone can view published products" ON products
-  FOR SELECT USING (status = 'published');
-
-CREATE POLICY "Admins can do everything with products" ON products
-  FOR ALL USING (
-    EXISTS (SELECT 1 FROM user_roles WHERE user_id = auth.uid() AND role = 'admin')
-  );
-
--- Orders: Users can view their own orders, admins can view/modify all
-CREATE POLICY "Users can view own orders" ON orders
-  FOR SELECT USING (user_id = auth.uid()::text);
-
-CREATE POLICY "Users can create orders" ON orders
-  FOR INSERT WITH CHECK (user_id = auth.uid()::text);
-
-CREATE POLICY "Admins can do everything with orders" ON orders
-  FOR ALL USING (
-    EXISTS (SELECT 1 FROM user_roles WHERE user_id = auth.uid() AND role = 'admin')
-  );
-
--- Order Items: Users can view their order items, admins can view all
-CREATE POLICY "Users can view own order items" ON order_items
-  FOR SELECT USING (
-    EXISTS (SELECT 1 FROM orders WHERE orders.id = order_items.order_id AND orders.user_id = auth.uid()::text)
-  );
-
-CREATE POLICY "Users can create order items" ON order_items
-  FOR INSERT WITH CHECK (
-    EXISTS (SELECT 1 FROM orders WHERE orders.id = order_items.order_id AND orders.user_id = auth.uid()::text)
-  );
-
-CREATE POLICY "Admins can do everything with order items" ON order_items
-  FOR ALL USING (
-    EXISTS (SELECT 1 FROM user_roles WHERE user_id = auth.uid() AND role = 'admin')
-  );
-
--- User Roles: Users can read their own role, only admins can modify
-CREATE POLICY "Users can view own role" ON user_roles
-  FOR SELECT USING (user_id = auth.uid());
-
-CREATE POLICY "Admins can do everything with user roles" ON user_roles
-  FOR ALL USING (
-    EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = auth.uid() AND ur.role = 'admin')
-  );
-
--- Subscription Requests: Authenticated users can create, admins can view all
-CREATE POLICY "Authenticated users can create subscription requests" ON subscription_requests
-  FOR INSERT WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid()::text);
-
-CREATE POLICY "Users can view own subscription requests" ON subscription_requests
-  FOR SELECT USING (user_id = auth.uid()::text);
-
-CREATE POLICY "Admins can do everything with subscription requests" ON subscription_requests
-  FOR ALL USING (
-    EXISTS (SELECT 1 FROM user_roles WHERE user_id = auth.uid() AND role = 'admin')
-  );
-```
-
-**Important Notes**:
-- The admin user (chzafar861) must already exist in the `user_roles` table with `role = 'admin'`
-- Without these policies, the admin panel will NOT work on Vercel
-- These policies also protect your data from unauthorized access via the Supabase anon key
 
 ### E-Commerce Shop Feature
 **Database Tables**:
@@ -194,7 +117,7 @@ The `shared/` directory contains code used by both frontend and backend:
 
 **API Contract Pattern**: Routes are defined declaratively in shared/routes.ts with Zod schemas, enabling type-safe API calls from the frontend and automatic validation on the backend.
 
-**Supabase Integration**: Uses Supabase for authentication (email/password with email verification) and database hosting. All secrets stored in environment variables.
+**Replit Integration**: Uses Replit Auth for authentication and Replit's built-in PostgreSQL for data storage. All secrets stored in environment variables.
 
 **Heritage-Focused Theming**: Custom CSS variables in index.css define a warm, saffron/cream color palette. Design guidelines specify typography scales and component patterns for a nostalgic museum-archive aesthetic.
 
@@ -222,45 +145,38 @@ The application supports 4 languages with comprehensive translations:
 
 ## Environment Variables
 
-### Required for Supabase
-- `SUPABASE_URL`: Your Supabase project URL
-- `SUPABASE_ANON_KEY`: Public anon key for client-side
-- `SUPABASE_SERVICE_ROLE_KEY`: Service role key for server-side
-- `VITE_SUPABASE_URL`: Same as SUPABASE_URL (for frontend)
-- `VITE_SUPABASE_ANON_KEY`: Same as SUPABASE_ANON_KEY (for frontend)
-- `DATABASE_URL`: PostgreSQL connection string (Supabase or other)
+### Required
+- `DATABASE_URL`: PostgreSQL connection string (provided by Replit)
+- `SESSION_SECRET`: Secret for session encryption
 
 ### Optional
-- `RESEND_API_KEY`: For sending verification emails via Resend
-- `SESSION_SECRET`: For legacy session handling
+- `RESEND_API_KEY`: For sending emails via Resend
+
+### Legacy (no longer required)
+- Supabase variables are no longer needed - the app now uses Replit's built-in PostgreSQL and Replit Auth
 
 ## Deployment
 
-### Vercel Deployment
-1. Connect your GitHub repository to Vercel
-2. Add all environment variables in Vercel project settings
-3. Build command: `npm run build`
-4. Output directory: `dist/public`
-5. Deploy!
+The application is designed to run on Replit with built-in hosting. All infrastructure (database, auth, file storage) is provided by Replit.
 
-### Configuration Files
-- `vercel.json`: Vercel deployment configuration
-- `.env.example`: Template for required environment variables
+To deploy:
+1. Ensure all environment variables are set
+2. Use Replit's built-in deployment feature
 
 ## External Dependencies
 
 ### Database
-- Supabase PostgreSQL via REST API
-- `@supabase/supabase-js` for all database operations (no direct PostgreSQL connection)
+- Replit's built-in PostgreSQL
+- Drizzle ORM for database operations
 
 ### Key NPM Packages
-- @supabase/supabase-js: Supabase client for authentication
 - drizzle-orm + drizzle-kit: Database ORM and migrations
 - @tanstack/react-query: Server state management
 - framer-motion: Animations
 - react-hook-form + zod: Form handling and validation
 - Radix UI primitives: Accessible component foundations
 - embla-carousel-react: Carousel functionality
+- express-session: Session management for auth
 
 ### Fonts (External)
 - Google Fonts: Playfair Display, Lato, DM Sans, Fira Code, Geist Mono
@@ -269,3 +185,13 @@ The application supports 4 languages with comprehensive translations:
 - Vite with React plugin
 - @replit/vite-plugin-runtime-error-modal for error handling
 - tsx for TypeScript execution
+
+## Recent Changes
+
+### January 2026 - Migration from Supabase to Replit Infrastructure
+- Replaced Supabase Auth with Replit Auth (OIDC-based)
+- Replaced Supabase PostgreSQL REST API with direct PostgreSQL via Drizzle ORM
+- Replaced Supabase Storage with Replit Object Storage
+- Simplified authentication flow using express-session
+- All client hooks now use REST API endpoints instead of direct Supabase calls
+- Admin user ID: `f2074a29-d162-4b8c-89e8-1ebb6974addd`
