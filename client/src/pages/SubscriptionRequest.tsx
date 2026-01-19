@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle, Crown, FileText, Users, Globe, Send, Loader2, ShoppingBag, Check } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { supabase } from "@/lib/supabase";
 import { useLocation } from "wouter";
 
 const subscriptionRequestSchema = z.object({
@@ -53,8 +53,29 @@ export default function SubscriptionRequest() {
 
   const submitRequest = useMutation({
     mutationFn: async (data: SubscriptionRequestData) => {
-      const response = await apiRequest("POST", "/api/subscription-requests", data);
-      return response.json();
+      if (!user?.id) {
+        throw new Error("You must be logged in to submit a request");
+      }
+      
+      const { error } = await supabase
+        .from("subscription_requests")
+        .insert({
+          user_id: user.id,
+          full_name: data.fullName,
+          email: data.email,
+          phone: data.phone,
+          country: data.country,
+          city: data.city,
+          reason: data.reason,
+          plan: data.plan,
+          status: "pending",
+        });
+      
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      return { success: true };
     },
     onSuccess: () => {
       setSubmitted(true);

@@ -92,11 +92,12 @@ For the admin panel to work securely on Vercel (static deployment), you MUST set
 **Required RLS Policies** (run these in Supabase SQL Editor):
 
 ```sql
--- Enable RLS on all admin tables
+-- Enable RLS on all tables
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_roles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE subscription_requests ENABLE ROW LEVEL SECURITY;
 
 -- Products: Anyone can read published products, only admins can modify
 CREATE POLICY "Anyone can view published products" ON products
@@ -142,6 +143,18 @@ CREATE POLICY "Users can view own role" ON user_roles
 CREATE POLICY "Admins can do everything with user roles" ON user_roles
   FOR ALL USING (
     EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id = auth.uid() AND ur.role = 'admin')
+  );
+
+-- Subscription Requests: Authenticated users can create, admins can view all
+CREATE POLICY "Authenticated users can create subscription requests" ON subscription_requests
+  FOR INSERT WITH CHECK (auth.uid() IS NOT NULL AND user_id = auth.uid()::text);
+
+CREATE POLICY "Users can view own subscription requests" ON subscription_requests
+  FOR SELECT USING (user_id = auth.uid()::text);
+
+CREATE POLICY "Admins can do everything with subscription requests" ON subscription_requests
+  FOR ALL USING (
+    EXISTS (SELECT 1 FROM user_roles WHERE user_id = auth.uid() AND role = 'admin')
   );
 ```
 
