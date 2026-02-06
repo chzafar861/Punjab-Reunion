@@ -60,9 +60,9 @@ function getGmailTransporter() {
 }
 
 async function sendEmail(to: string, subject: string, html: string) {
-  // Try Resend first (primary - managed by Replit integration)
+  // Try Resend connector integration first
   try {
-    console.log(`[email] Attempting Resend to: ${to}`);
+    console.log(`[email] Attempting Resend (connector) to: ${to}`);
     const { client, fromEmail } = await getResendClient();
     const result = await client.emails.send({
       from: fromEmail || '47DaPunjab <onboarding@resend.dev>',
@@ -73,10 +73,32 @@ async function sendEmail(to: string, subject: string, html: string) {
     if (result.error) {
       throw new Error(`Resend API error: ${result.error.message}`);
     }
-    console.log(`[email] Resend send successful:`, result.data);
+    console.log(`[email] Resend connector send successful:`, result.data);
     return result;
   } catch (resendError: any) {
-    console.log(`[email] Resend failed: ${resendError.message}`);
+    console.log(`[email] Resend connector failed: ${resendError.message}`);
+  }
+
+  // Try direct Resend API key from environment
+  const resendApiKey = process.env.RESEND_API_KEY;
+  if (resendApiKey) {
+    try {
+      console.log(`[email] Attempting Resend (direct API key) to: ${to}`);
+      const client = new Resend(resendApiKey);
+      const result = await client.emails.send({
+        from: '47DaPunjab <onboarding@resend.dev>',
+        to,
+        subject,
+        html,
+      });
+      if (result.error) {
+        throw new Error(`Resend direct API error: ${result.error.message}`);
+      }
+      console.log(`[email] Resend direct send successful:`, result.data);
+      return result;
+    } catch (directResendError: any) {
+      console.log(`[email] Resend direct failed: ${directResendError.message}`);
+    }
   }
 
   // Fallback to Gmail SMTP
@@ -96,7 +118,7 @@ async function sendEmail(to: string, subject: string, html: string) {
     return result;
   }
 
-  throw new Error('No email service available. Both Resend and Gmail failed.');
+  throw new Error('No email service available. Resend and Gmail both failed.');
 }
 
 export async function sendVerificationEmail(email: string, token: string, baseUrl: string) {
