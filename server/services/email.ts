@@ -60,11 +60,31 @@ function getGmailTransporter() {
 }
 
 async function sendEmail(to: string, subject: string, html: string) {
+  // Try Resend first (primary - managed by Replit integration)
+  try {
+    console.log(`[email] Attempting Resend to: ${to}`);
+    const { client, fromEmail } = await getResendClient();
+    const result = await client.emails.send({
+      from: fromEmail || '47DaPunjab <onboarding@resend.dev>',
+      to,
+      subject,
+      html,
+    });
+    if (result.error) {
+      throw new Error(`Resend API error: ${result.error.message}`);
+    }
+    console.log(`[email] Resend send successful:`, result.data);
+    return result;
+  } catch (resendError: any) {
+    console.log(`[email] Resend failed: ${resendError.message}`);
+  }
+
+  // Fallback to Gmail SMTP
   const gmailUser = process.env.GMAIL_USER;
   const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
 
   if (gmailUser && gmailAppPassword) {
-    console.log(`[email] Sending via Gmail to: ${to}`);
+    console.log(`[email] Falling back to Gmail for: ${to}`);
     const transporter = getGmailTransporter();
     const result = await transporter.sendMail({
       from: `"47DaPunjab" <${gmailUser}>`,
@@ -76,16 +96,7 @@ async function sendEmail(to: string, subject: string, html: string) {
     return result;
   }
 
-  console.log(`[email] Sending via Resend to: ${to}`);
-  const { client, fromEmail } = await getResendClient();
-  const result = await client.emails.send({
-    from: fromEmail || 'noreply@47dapunjab.com',
-    to,
-    subject,
-    html,
-  });
-  console.log(`[email] Resend send result:`, result);
-  return result;
+  throw new Error('No email service available. Both Resend and Gmail failed.');
 }
 
 export async function sendVerificationEmail(email: string, token: string, baseUrl: string) {
