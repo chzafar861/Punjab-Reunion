@@ -118,6 +118,90 @@ export async function registerRoutes(
     }
   });
 
+  // Forgot password - sends reset email
+  app.post("/api/auth/forgot-password", async (req: any, res) => {
+    try {
+      const schema = z.object({
+        email: z.string().email("Invalid email address"),
+      });
+      const data = schema.parse(req.body);
+      const { db } = await import("./db");
+      const { users, passwordResetTokens } = await import("@shared/models/auth");
+      const { eq } = await import("drizzle-orm");
+      const { randomBytes } = await import("crypto");
+      const { sendPasswordResetEmail } = await import("./services/email");
+
+      const [user] = await db.select().from(users).where(eq(users.email, data.email.toLowerCase()));
+      if (!user || !user.passwordHash) {
+        return res.json({ success: true, message: "If an account with that email exists, a reset link has been sent." });
+      }
+
+      const token = randomBytes(32).toString("hex");
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+      await db.insert(passwordResetTokens).values({
+        userId: user.id,
+        token,
+        expiresAt,
+      });
+
+      const baseUrl = `${req.protocol}://${req.get("host")}`;
+      try {
+        await sendPasswordResetEmail(user.email!, token, baseUrl);
+      } catch (emailErr) {
+        console.error("[forgot-password] Email send failed:", emailErr);
+      }
+
+      console.log(`[forgot-password] Reset requested for: ${data.email}`);
+      res.json({ success: true, message: "If an account with that email exists, a reset link has been sent." });
+    } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      console.error("[forgot-password] Error:", err);
+      res.status(500).json({ message: "Something went wrong. Please try again." });
+    }
+  });
+
+  // Reset password - validates token and sets new password
+  app.post("/api/auth/reset-password", async (req: any, res) => {
+    try {
+      const schema = z.object({
+        token: z.string().min(1, "Token is required"),
+        password: z.string().min(6, "Password must be at least 6 characters"),
+      });
+      const data = schema.parse(req.body);
+      const { db } = await import("./db");
+      const { users, passwordResetTokens } = await import("@shared/models/auth");
+      const { eq, and } = await import("drizzle-orm");
+
+      const [resetToken] = await db.select().from(passwordResetTokens)
+        .where(and(eq(passwordResetTokens.token, data.token), eq(passwordResetTokens.used, false)));
+
+      if (!resetToken) {
+        return res.status(400).json({ message: "Invalid or expired reset link. Please request a new one." });
+      }
+
+      if (new Date() > resetToken.expiresAt) {
+        await db.update(passwordResetTokens).set({ used: true }).where(eq(passwordResetTokens.id, resetToken.id));
+        return res.status(400).json({ message: "This reset link has expired. Please request a new one." });
+      }
+
+      const passwordHash = await bcrypt.hash(data.password, 10);
+      await db.update(users).set({ passwordHash }).where(eq(users.id, resetToken.userId));
+      await db.update(passwordResetTokens).set({ used: true }).where(eq(passwordResetTokens.id, resetToken.id));
+
+      console.log(`[reset-password] Password reset for user: ${resetToken.userId}`);
+      res.json({ success: true, message: "Password has been reset successfully. You can now sign in." });
+    } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      console.error("[reset-password] Error:", err);
+      res.status(500).json({ message: "Something went wrong. Please try again." });
+    }
+  });
+
   // Logout for local auth
   app.post("/api/auth/local-logout", (req: any, res) => {
     req.logout((err: any) => {
