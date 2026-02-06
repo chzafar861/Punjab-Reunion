@@ -3,13 +3,15 @@ import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
+import bcrypt from "bcryptjs";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { registerTranslateRoutes } from "./replit_integrations/translate";
 import { isAuthenticated, setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
+import { authStorage } from "./replit_integrations/auth/storage";
 
-// Helper to get user ID from Replit Auth session
+// Helper to get user ID from session (supports both OIDC and local auth)
 const getUserId = (req: any): string | undefined => {
-  return req.user?.claims?.sub;
+  return req.user?.claims?.sub || req.user?.id;
 };
 
 // Middleware to require authentication and attach user info
@@ -37,21 +39,113 @@ export async function registerRoutes(
   // Register translation routes for AI-powered content translation
   registerTranslateRoutes(app);
   
+  // Email/password registration
+  app.post("/api/auth/register", async (req: any, res) => {
+    try {
+      const schema = z.object({
+        firstName: z.string().min(1, "First name is required"),
+        lastName: z.string().min(1, "Last name is required"),
+        email: z.string().email("Invalid email address"),
+        password: z.string().min(6, "Password must be at least 6 characters"),
+      });
+      const data = schema.parse(req.body);
+      const { db } = await import("./db");
+      const { users } = await import("@shared/models/auth");
+      const { eq } = await import("drizzle-orm");
+      const [existing] = await db.select().from(users).where(eq(users.email, data.email.toLowerCase()));
+      if (existing) {
+        return res.status(400).json({ message: "An account with this email already exists" });
+      }
+      const passwordHash = await bcrypt.hash(data.password, 10);
+      const [newUser] = await db.insert(users).values({
+        email: data.email.toLowerCase(),
+        firstName: data.firstName,
+        lastName: data.lastName,
+        passwordHash,
+        username: data.email.toLowerCase().split("@")[0],
+        emailVerified: false,
+      }).returning();
+      req.login({ id: newUser.id, email: newUser.email, firstName: newUser.firstName, lastName: newUser.lastName, profileImageUrl: newUser.profileImageUrl }, (err: any) => {
+        if (err) {
+          console.error("[register] Session login error:", err);
+          return res.status(500).json({ message: "Account created but login failed" });
+        }
+        console.log(`[register] User registered: ${newUser.email} (${newUser.id})`);
+        res.json({ success: true, user: { id: newUser.id, email: newUser.email, firstName: newUser.firstName, lastName: newUser.lastName } });
+      });
+    } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      console.error("[register] Error:", err);
+      res.status(500).json({ message: "Registration failed" });
+    }
+  });
+
+  // Email/password login
+  app.post("/api/auth/login", async (req: any, res) => {
+    try {
+      const schema = z.object({
+        email: z.string().email("Invalid email address"),
+        password: z.string().min(1, "Password is required"),
+      });
+      const data = schema.parse(req.body);
+      const { db } = await import("./db");
+      const { users } = await import("@shared/models/auth");
+      const { eq } = await import("drizzle-orm");
+      const [user] = await db.select().from(users).where(eq(users.email, data.email.toLowerCase()));
+      if (!user || !user.passwordHash) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+      const valid = await bcrypt.compare(data.password, user.passwordHash);
+      if (!valid) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+      req.login({ id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, profileImageUrl: user.profileImageUrl }, (err: any) => {
+        if (err) {
+          console.error("[login] Session login error:", err);
+          return res.status(500).json({ message: "Login failed" });
+        }
+        console.log(`[login] User logged in: ${user.email} (${user.id})`);
+        res.json({ success: true, user: { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName } });
+      });
+    } catch (err: any) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      console.error("[login] Error:", err);
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  // Logout for local auth
+  app.post("/api/auth/local-logout", (req: any, res) => {
+    req.logout((err: any) => {
+      if (err) {
+        return res.status(500).json({ message: "Logout failed" });
+      }
+      req.session.destroy((err2: any) => {
+        res.json({ success: true });
+      });
+    });
+  });
+
   // Auth endpoint to get current user info (with role)
-  app.get("/api/auth/me", isAuthenticated, async (req: any, res) => {
+  app.get("/api/auth/me", requireUser, async (req: any, res) => {
     const userId = getUserId(req);
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
     }
     const userRole = await storage.getUserRole(userId);
     const claims = req.user?.claims || {};
+    const localUser = req.user || {};
     res.json({
       id: userId,
-      email: claims.email || null,
-      username: claims.email?.split('@')[0] || null,
-      firstName: claims.first_name || null,
-      lastName: claims.last_name || null,
-      profileImageUrl: claims.profile_image_url || null,
+      email: claims.email || localUser.email || null,
+      username: (claims.email || localUser.email)?.split('@')[0] || null,
+      firstName: claims.first_name || localUser.firstName || null,
+      lastName: claims.last_name || localUser.lastName || null,
+      profileImageUrl: claims.profile_image_url || localUser.profileImageUrl || null,
       role: userRole?.role || "member",
       canSubmitProfiles: userRole?.canSubmitProfiles || false,
       canManageProducts: userRole?.canManageProducts || false,

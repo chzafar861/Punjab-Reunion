@@ -29,7 +29,6 @@ async function fetchUser(): Promise<AuthUser | null> {
     const user = await response.json();
     if (!user) return null;
     
-    // Get additional role info
     try {
       const meResponse = await fetch("/api/auth/me", {
         credentials: "include",
@@ -50,7 +49,6 @@ async function fetchUser(): Promise<AuthUser | null> {
         };
       }
     } catch {
-      // Role fetch failed, return base user
     }
     
     return {
@@ -72,14 +70,17 @@ async function fetchUser(): Promise<AuthUser | null> {
 }
 
 async function logout(): Promise<void> {
-  window.location.href = "/api/logout";
+  try {
+    await fetch("/api/auth/local-logout", { method: "POST", credentials: "include" });
+  } catch {}
+  window.location.href = "/";
 }
 
 export function useAuth() {
   const queryClient = useQueryClient();
   
   const { data: user, isLoading, isFetched, refetch } = useQuery<AuthUser | null>({
-    queryKey: ["replit-auth"],
+    queryKey: ["auth-user"],
     queryFn: fetchUser,
     retry: false,
     staleTime: 1000 * 60 * 5,
@@ -88,7 +89,7 @@ export function useAuth() {
   const logoutMutation = useMutation({
     mutationFn: logout,
     onSuccess: () => {
-      queryClient.setQueryData(["replit-auth"], null);
+      queryClient.setQueryData(["auth-user"], null);
     },
   });
 
