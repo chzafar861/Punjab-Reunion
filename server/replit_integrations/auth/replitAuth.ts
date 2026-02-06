@@ -7,6 +7,9 @@ import type { Express, RequestHandler } from "express";
 import memoize from "memoizee";
 import connectPg from "connect-pg-simple";
 import { authStorage } from "./storage";
+import { storage } from "../../storage";
+
+const ADMIN_EMAILS = ["chzafar861@gmail.com"];
 
 const getOidcConfig = memoize(
   async () => {
@@ -59,6 +62,20 @@ async function upsertUser(claims: any) {
     lastName: claims["last_name"],
     profileImageUrl: claims["profile_image_url"],
   });
+
+  const email = claims["email"]?.toLowerCase();
+  const userId = claims["sub"];
+  if (email && ADMIN_EMAILS.includes(email)) {
+    try {
+      const existingRole = await storage.getUserRole(userId);
+      if (!existingRole || existingRole.role !== "admin") {
+        await storage.setUserRole(userId, "admin", true, true);
+        console.log(`[auto-admin] Assigned admin role to ${email} (${userId})`);
+      }
+    } catch (err) {
+      console.error(`[auto-admin] Failed to assign admin role to ${email}:`, err);
+    }
+  }
 }
 
 export async function setupAuth(app: Express) {

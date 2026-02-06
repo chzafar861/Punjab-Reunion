@@ -367,7 +367,7 @@ export async function registerRoutes(
 
   // Protected: Delete comment (only owner can delete)
   app.delete("/api/comments/:id", isAuthenticated, async (req: any, res) => {
-    const userId = req.supabaseUser?.id;
+    const userId = getUserId(req);
     const commentId = Number(req.params.id);
     const deleted = await storage.deleteProfileComment(commentId, userId);
     if (!deleted) {
@@ -380,7 +380,7 @@ export async function registerRoutes(
 
   // Admin middleware helper
   const requireAdmin = async (req: any, res: any, next: any) => {
-    const userId = req.supabaseUser?.id;
+    const userId = getUserId(req);
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
     }
@@ -566,7 +566,7 @@ export async function registerRoutes(
 
   // Admin: Delete product
   app.delete("/api/admin/products/:id", isAuthenticated, requireAdmin, async (req: any, res) => {
-    const userId = req.supabaseUser?.id;
+    const userId = getUserId(req);
     const productId = Number(req.params.id);
     const deleted = await storage.deleteProduct(productId, userId);
     if (!deleted) {
@@ -579,14 +579,14 @@ export async function registerRoutes(
 
   // Protected: Get user's orders
   app.get("/api/my-orders", isAuthenticated, async (req: any, res) => {
-    const userId = req.supabaseUser?.id;
+    const userId = getUserId(req);
     const orders = await storage.getOrders(userId);
     res.json(orders);
   });
 
   // Protected: Get single order (user can only see their own)
   app.get("/api/orders/:id", isAuthenticated, async (req: any, res) => {
-    const userId = req.supabaseUser?.id;
+    const userId = getUserId(req);
     const order = await storage.getOrder(Number(req.params.id));
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
