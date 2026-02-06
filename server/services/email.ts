@@ -1,3 +1,4 @@
+import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
 
 let connectionSettings: any;
@@ -41,99 +42,120 @@ export async function getResendClient() {
   };
 }
 
+function getGmailTransporter() {
+  const gmailUser = process.env.GMAIL_USER;
+  const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
+
+  if (!gmailUser || !gmailAppPassword) {
+    throw new Error('Gmail credentials not configured (GMAIL_USER, GMAIL_APP_PASSWORD)');
+  }
+
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: gmailUser,
+      pass: gmailAppPassword,
+    },
+  });
+}
+
+async function sendEmail(to: string, subject: string, html: string) {
+  const gmailUser = process.env.GMAIL_USER;
+  const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
+
+  if (gmailUser && gmailAppPassword) {
+    console.log(`[email] Sending via Gmail to: ${to}`);
+    const transporter = getGmailTransporter();
+    const result = await transporter.sendMail({
+      from: `"47DaPunjab" <${gmailUser}>`,
+      to,
+      subject,
+      html,
+    });
+    console.log(`[email] Gmail send successful, messageId: ${result.messageId}`);
+    return result;
+  }
+
+  console.log(`[email] Sending via Resend to: ${to}`);
+  const { client, fromEmail } = await getResendClient();
+  const result = await client.emails.send({
+    from: fromEmail || 'noreply@47dapunjab.com',
+    to,
+    subject,
+    html,
+  });
+  console.log(`[email] Resend send result:`, result);
+  return result;
+}
+
 export async function sendVerificationEmail(email: string, token: string, baseUrl: string) {
   console.log(`Attempting to send verification email to: ${email}`);
-  
-  try {
-    const { client, fromEmail } = await getResendClient();
-    
-    const verificationUrl = `${baseUrl}/verify-email?token=${token}`;
-    console.log(`Verification URL: ${verificationUrl}`);
-    console.log(`Using from email: ${fromEmail}`);
-    
-    const result = await client.emails.send({
-      from: fromEmail || 'noreply@47dapunjab.com',
-      to: email,
-      subject: 'Verify your email - 47DaPunjab',
-      html: `
-        <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-          <h1 style="color: #5D4037; font-size: 28px; margin-bottom: 20px;">Welcome to 47DaPunjab</h1>
-          <p style="color: #333; font-size: 16px; line-height: 1.6;">
-            Thank you for registering! Please verify your email address by clicking the button below:
-          </p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${verificationUrl}" 
-               style="background-color: #D4A574; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-size: 16px; display: inline-block;">
-              Verify Email Address
-            </a>
-          </div>
-          <p style="color: #666; font-size: 14px; line-height: 1.6;">
-            If the button doesn't work, copy and paste this link into your browser:<br/>
-            <a href="${verificationUrl}" style="color: #D4A574;">${verificationUrl}</a>
-          </p>
-          <p style="color: #666; font-size: 14px; margin-top: 30px;">
-            This link will expire in 24 hours.
-          </p>
-          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;"/>
-          <p style="color: #999; font-size: 12px;">
-            47DaPunjab - Reconnecting Roots Across Borders
-          </p>
+
+  const verificationUrl = `${baseUrl}/verify-email?token=${token}`;
+
+  await sendEmail(
+    email,
+    'Verify your email - 47DaPunjab',
+    `
+      <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+        <h1 style="color: #5D4037; font-size: 28px; margin-bottom: 20px;">Welcome to 47DaPunjab</h1>
+        <p style="color: #333; font-size: 16px; line-height: 1.6;">
+          Thank you for registering! Please verify your email address by clicking the button below:
+        </p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${verificationUrl}" 
+             style="background-color: #D4A574; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-size: 16px; display: inline-block;">
+            Verify Email Address
+          </a>
         </div>
-      `,
-    });
-    
-    console.log(`Verification email sent successfully:`, result);
-    return result;
-  } catch (error) {
-    console.error(`Failed to send verification email to ${email}:`, error);
-    throw error;
-  }
+        <p style="color: #666; font-size: 14px; line-height: 1.6;">
+          If the button doesn't work, copy and paste this link into your browser:<br/>
+          <a href="${verificationUrl}" style="color: #D4A574;">${verificationUrl}</a>
+        </p>
+        <p style="color: #666; font-size: 14px; margin-top: 30px;">
+          This link will expire in 24 hours.
+        </p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;"/>
+        <p style="color: #999; font-size: 12px;">
+          47DaPunjab - Reconnecting Roots Across Borders
+        </p>
+      </div>
+    `,
+  );
 }
 
 export async function sendPasswordResetEmail(email: string, token: string, baseUrl: string) {
   console.log(`Attempting to send password reset email to: ${email}`);
 
-  try {
-    const { client, fromEmail } = await getResendClient();
+  const resetUrl = `${baseUrl}/reset-password?token=${token}`;
 
-    const resetUrl = `${baseUrl}/reset-password?token=${token}`;
-    console.log(`Password reset URL: ${resetUrl}`);
-
-    const result = await client.emails.send({
-      from: fromEmail || 'noreply@47dapunjab.com',
-      to: email,
-      subject: 'Reset your password - 47DaPunjab',
-      html: `
-        <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
-          <h1 style="color: #5D4037; font-size: 28px; margin-bottom: 20px;">Password Reset</h1>
-          <p style="color: #333; font-size: 16px; line-height: 1.6;">
-            We received a request to reset your password. Click the button below to choose a new password:
-          </p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${resetUrl}"
-               style="background-color: #D4A574; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-size: 16px; display: inline-block;">
-              Reset Password
-            </a>
-          </div>
-          <p style="color: #666; font-size: 14px; line-height: 1.6;">
-            If the button doesn't work, copy and paste this link into your browser:<br/>
-            <a href="${resetUrl}" style="color: #D4A574;">${resetUrl}</a>
-          </p>
-          <p style="color: #666; font-size: 14px; margin-top: 30px;">
-            This link will expire in 1 hour. If you did not request a password reset, you can safely ignore this email.
-          </p>
-          <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;"/>
-          <p style="color: #999; font-size: 12px;">
-            47DaPunjab - Reconnecting Roots Across Borders
-          </p>
+  await sendEmail(
+    email,
+    'Reset your password - 47DaPunjab',
+    `
+      <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+        <h1 style="color: #5D4037; font-size: 28px; margin-bottom: 20px;">Password Reset</h1>
+        <p style="color: #333; font-size: 16px; line-height: 1.6;">
+          We received a request to reset your password. Click the button below to choose a new password:
+        </p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${resetUrl}"
+             style="background-color: #D4A574; color: white; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-size: 16px; display: inline-block;">
+            Reset Password
+          </a>
         </div>
-      `,
-    });
-
-    console.log(`Password reset email sent successfully:`, result);
-    return result;
-  } catch (error) {
-    console.error(`Failed to send password reset email to ${email}:`, error);
-    throw error;
-  }
+        <p style="color: #666; font-size: 14px; line-height: 1.6;">
+          If the button doesn't work, copy and paste this link into your browser:<br/>
+          <a href="${resetUrl}" style="color: #D4A574;">${resetUrl}</a>
+        </p>
+        <p style="color: #666; font-size: 14px; margin-top: 30px;">
+          This link will expire in 1 hour. If you did not request a password reset, you can safely ignore this email.
+        </p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 30px 0;"/>
+        <p style="color: #999; font-size: 12px;">
+          47DaPunjab - Reconnecting Roots Across Borders
+        </p>
+      </div>
+    `,
+  );
 }
