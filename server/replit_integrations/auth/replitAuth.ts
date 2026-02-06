@@ -121,6 +121,7 @@ export async function setupAuth(app: Express) {
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
   app.get("/api/login", (req, res, next) => {
+    console.log(`[auth-login] Login initiated from hostname: ${req.hostname}, protocol: ${req.protocol}`);
     ensureStrategy(req.hostname);
     passport.authenticate(`replitauth:${req.hostname}`, {
       prompt: "login consent",
@@ -129,10 +130,25 @@ export async function setupAuth(app: Express) {
   });
 
   app.get("/api/callback", (req, res, next) => {
+    console.log(`[auth-callback] Callback received for hostname: ${req.hostname}`);
     ensureStrategy(req.hostname);
-    passport.authenticate(`replitauth:${req.hostname}`, {
-      successReturnToOrRedirect: "/",
-      failureRedirect: "/api/login",
+    passport.authenticate(`replitauth:${req.hostname}`, (err: any, user: any, info: any) => {
+      if (err) {
+        console.error("[auth-callback] Authentication error:", err);
+        return res.redirect("/login?error=auth_failed");
+      }
+      if (!user) {
+        console.error("[auth-callback] No user returned. Info:", info);
+        return res.redirect("/login?error=no_user");
+      }
+      req.logIn(user, (loginErr: any) => {
+        if (loginErr) {
+          console.error("[auth-callback] Login error:", loginErr);
+          return res.redirect("/login?error=login_failed");
+        }
+        console.log("[auth-callback] Login successful for user:", user.claims?.sub);
+        return res.redirect("/");
+      });
     })(req, res, next);
   });
 
