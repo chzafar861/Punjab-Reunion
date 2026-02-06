@@ -132,7 +132,7 @@ export async function registerRoutes(
       const { sendPasswordResetEmail } = await import("./services/email");
 
       const [user] = await db.select().from(users).where(eq(users.email, data.email.toLowerCase()));
-      if (!user || !user.passwordHash) {
+      if (!user) {
         return res.json({ success: true, message: "If an account with that email exists, a reset link has been sent." });
       }
 
