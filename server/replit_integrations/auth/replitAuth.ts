@@ -13,9 +13,15 @@ const ADMIN_EMAILS = ["chzafar861@gmail.com"];
 
 const getOidcConfig = memoize(
   async () => {
+    const issuerUrl = process.env.ISSUER_URL ?? "https://replit.com/oidc";
+    const replId = process.env.REPL_ID;
+    if (!replId) {
+      throw new Error("REPL_ID environment variable is not set");
+    }
+    console.log(`[auth] OIDC discovery: issuer=${issuerUrl}, clientId=${replId}`);
     return await client.discovery(
-      new URL(process.env.ISSUER_URL ?? "https://replit.com/oidc"),
-      process.env.REPL_ID!
+      new URL(issuerUrl),
+      replId
     );
   },
   { maxAge: 3600 * 1000 }
@@ -84,25 +90,25 @@ export async function setupAuth(app: Express) {
   app.use(passport.initialize());
   app.use(passport.session());
 
-  const config = await getOidcConfig();
+  passport.serializeUser((user: Express.User, cb) => cb(null, user));
+  passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
-  const verify: VerifyFunction = async (
-    tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
-    verified: passport.AuthenticateCallback
-  ) => {
-    const user = {};
-    updateUserSession(user, tokens);
-    await upsertUser(tokens.claims());
-    verified(null, user);
-  };
-
-  // Keep track of registered strategies
   const registeredStrategies = new Set<string>();
 
-  // Helper function to ensure strategy exists for a domain
-  const ensureStrategy = (domain: string) => {
+  const ensureStrategy = async (domain: string) => {
+    const config = await getOidcConfig();
     const strategyName = `replitauth:${domain}`;
     if (!registeredStrategies.has(strategyName)) {
+      const verify: VerifyFunction = async (
+        tokens: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
+        verified: passport.AuthenticateCallback
+      ) => {
+        const user = {};
+        updateUserSession(user, tokens);
+        await upsertUser(tokens.claims());
+        verified(null, user);
+      };
+
       const strategy = new Strategy(
         {
           name: strategyName,
@@ -114,54 +120,78 @@ export async function setupAuth(app: Express) {
       );
       passport.use(strategy);
       registeredStrategies.add(strategyName);
+      console.log(`[auth] Registered OIDC strategy for domain: ${domain}`);
     }
+    return strategyName;
   };
 
-  passport.serializeUser((user: Express.User, cb) => cb(null, user));
-  passport.deserializeUser((user: Express.User, cb) => cb(null, user));
-
-  app.get("/api/login", (req, res, next) => {
-    console.log(`[auth-login] Login initiated from hostname: ${req.hostname}, protocol: ${req.protocol}`);
-    ensureStrategy(req.hostname);
-    passport.authenticate(`replitauth:${req.hostname}`, {
-      prompt: "login consent",
-      scope: ["openid", "email", "profile", "offline_access"],
-    })(req, res, next);
+  app.get("/api/login", async (req, res, next) => {
+    try {
+      console.log(`[auth-login] Login initiated from hostname: ${req.hostname}, protocol: ${req.protocol}`);
+      const strategyName = await ensureStrategy(req.hostname);
+      passport.authenticate(strategyName, {
+        prompt: "login consent",
+        scope: ["openid", "email", "profile", "offline_access"],
+      })(req, res, next);
+    } catch (err) {
+      console.error("[auth-login] Failed to initiate login:", err);
+      res.redirect("/login?error=auth_setup_failed");
+    }
   });
 
-  app.get("/api/callback", (req, res, next) => {
-    console.log(`[auth-callback] Callback received for hostname: ${req.hostname}`);
-    ensureStrategy(req.hostname);
-    passport.authenticate(`replitauth:${req.hostname}`, (err: any, user: any, info: any) => {
-      if (err) {
-        console.error("[auth-callback] Authentication error:", err);
-        return res.redirect("/login?error=auth_failed");
-      }
-      if (!user) {
-        console.error("[auth-callback] No user returned. Info:", info);
-        return res.redirect("/login?error=no_user");
-      }
-      req.logIn(user, (loginErr: any) => {
-        if (loginErr) {
-          console.error("[auth-callback] Login error:", loginErr);
-          return res.redirect("/login?error=login_failed");
+  app.get("/api/callback", async (req, res, next) => {
+    try {
+      console.log(`[auth-callback] Callback received for hostname: ${req.hostname}`);
+      const strategyName = await ensureStrategy(req.hostname);
+      passport.authenticate(strategyName, (err: any, user: any, info: any) => {
+        if (err) {
+          console.error("[auth-callback] Authentication error:", err);
+          return res.redirect("/login?error=auth_failed");
         }
-        console.log("[auth-callback] Login successful for user:", user.claims?.sub);
-        return res.redirect("/");
-      });
-    })(req, res, next);
+        if (!user) {
+          console.error("[auth-callback] No user returned. Info:", info);
+          return res.redirect("/login?error=no_user");
+        }
+        req.logIn(user, (loginErr: any) => {
+          if (loginErr) {
+            console.error("[auth-callback] Login error:", loginErr);
+            return res.redirect("/login?error=login_failed");
+          }
+          console.log("[auth-callback] Login successful for user:", user.claims?.sub);
+          return res.redirect("/");
+        });
+      })(req, res, next);
+    } catch (err) {
+      console.error("[auth-callback] Failed to process callback:", err);
+      res.redirect("/login?error=callback_failed");
+    }
   });
 
-  app.get("/api/logout", (req, res) => {
-    req.logout(() => {
-      res.redirect(
-        client.buildEndSessionUrl(config, {
-          client_id: process.env.REPL_ID!,
-          post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
-        }).href
-      );
-    });
+  app.get("/api/logout", async (req, res) => {
+    try {
+      const config = await getOidcConfig();
+      req.logout(() => {
+        res.redirect(
+          client.buildEndSessionUrl(config, {
+            client_id: process.env.REPL_ID!,
+            post_logout_redirect_uri: `${req.protocol}://${req.hostname}`,
+          }).href
+        );
+      });
+    } catch (err) {
+      console.error("[auth-logout] Failed to logout:", err);
+      req.logout(() => {
+        res.redirect("/");
+      });
+    }
   });
+
+  try {
+    await getOidcConfig();
+    console.log("[auth] OIDC configuration loaded successfully");
+  } catch (err) {
+    console.error("[auth] Warning: OIDC configuration failed to pre-load, will retry on first login:", err);
+  }
 }
 
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
