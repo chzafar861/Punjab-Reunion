@@ -4,10 +4,12 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { registerObjectStorageRoutes } from "./replit_integrations/object_storage";
 import { registerTranslateRoutes } from "./replit_integrations/translate";
 import { isAuthenticated, setupAuth, registerAuthRoutes } from "./replit_integrations/auth";
 import { authStorage } from "./replit_integrations/auth/storage";
+import { sendVerificationEmail } from "./services/email";
 
 // Helper to get user ID from session (supports both OIDC and local auth)
 const getUserId = (req: any): string | undefined => {
@@ -65,6 +67,22 @@ export async function registerRoutes(
         username: data.email.toLowerCase().split("@")[0],
         emailVerified: false,
       }).returning();
+      // Send verification email
+      try {
+        const { emailVerificationTokens } = await import("@shared/models/auth");
+        const verificationToken = crypto.randomBytes(32).toString("hex");
+        await db.insert(emailVerificationTokens).values({
+          userId: newUser.id,
+          token: verificationToken,
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        });
+        const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get("host")}`;
+        await sendVerificationEmail(newUser.email!, verificationToken, baseUrl);
+        console.log(`[register] Verification email sent to: ${newUser.email}`);
+      } catch (emailErr: any) {
+        console.error("[register] Verification email failed:", emailErr.message);
+      }
+
       req.login({ id: newUser.id, email: newUser.email, firstName: newUser.firstName, lastName: newUser.lastName, profileImageUrl: newUser.profileImageUrl }, (err: any) => {
         if (err) {
           console.error("[register] Session login error:", err);
@@ -145,7 +163,7 @@ export async function registerRoutes(
         expiresAt,
       });
 
-      const baseUrl = `${req.protocol}://${req.get("host")}`;
+      const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get("host")}`;
       try {
         await sendPasswordResetEmail(user.email!, token, baseUrl);
       } catch (emailErr) {
@@ -199,6 +217,70 @@ export async function registerRoutes(
       }
       console.error("[reset-password] Error:", err);
       res.status(500).json({ message: "Something went wrong. Please try again." });
+    }
+  });
+
+  // Verify email - validates token and marks email as verified
+  app.get("/api/auth/verify-email", async (req: any, res) => {
+    try {
+      const token = req.query.token as string;
+      if (!token) {
+        return res.status(400).json({ success: false, message: "Verification token is required" });
+      }
+      const { db } = await import("./db");
+      const { users, emailVerificationTokens } = await import("@shared/models/auth");
+      const { eq } = await import("drizzle-orm");
+
+      const [verificationToken] = await db.select().from(emailVerificationTokens)
+        .where(eq(emailVerificationTokens.token, token));
+
+      if (!verificationToken) {
+        return res.status(400).json({ success: false, message: "Invalid verification link." });
+      }
+
+      if (new Date() > verificationToken.expiresAt) {
+        await db.delete(emailVerificationTokens).where(eq(emailVerificationTokens.id, verificationToken.id));
+        return res.status(400).json({ success: false, message: "This verification link has expired. Please request a new one." });
+      }
+
+      await db.update(users).set({ emailVerified: true }).where(eq(users.id, verificationToken.userId));
+      await db.delete(emailVerificationTokens).where(eq(emailVerificationTokens.id, verificationToken.id));
+
+      console.log(`[verify-email] Email verified for user: ${verificationToken.userId}`);
+      res.json({ success: true, message: "Email verified successfully!" });
+    } catch (err: any) {
+      console.error("[verify-email] Error:", err);
+      res.status(500).json({ success: false, message: "Verification failed. Please try again." });
+    }
+  });
+
+  // Resend verification email
+  app.post("/api/auth/resend-verification", requireUser, async (req: any, res) => {
+    try {
+      const userId = getUserId(req);
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+      const { db } = await import("./db");
+      const { users, emailVerificationTokens } = await import("@shared/models/auth");
+      const { eq } = await import("drizzle-orm");
+
+      const [user] = await db.select().from(users).where(eq(users.id, userId));
+      if (!user || !user.email) return res.status(404).json({ message: "User not found" });
+      if (user.emailVerified) return res.json({ success: true, message: "Email is already verified." });
+
+      const verificationToken = crypto.randomBytes(32).toString("hex");
+      await db.insert(emailVerificationTokens).values({
+        userId: user.id,
+        token: verificationToken,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      });
+      const baseUrl = process.env.APP_URL || `${req.protocol}://${req.get("host")}`;
+      await sendVerificationEmail(user.email, verificationToken, baseUrl);
+      console.log(`[resend-verification] Verification email resent to: ${user.email}`);
+      res.json({ success: true, message: "Verification email sent." });
+    } catch (err: any) {
+      console.error("[resend-verification] Error:", err);
+      res.status(500).json({ message: "Failed to resend verification email." });
     }
   });
 
