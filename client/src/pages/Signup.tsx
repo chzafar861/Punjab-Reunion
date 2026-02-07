@@ -60,7 +60,15 @@ export default function Signup() {
         credentials: "include",
         body: JSON.stringify({ firstName, lastName, email, password }),
       });
-      const data = await response.json();
+
+      let data: any;
+      try {
+        data = await response.json();
+      } catch {
+        setError("Server returned an unexpected response. Please try again later.");
+        return;
+      }
+
       if (!response.ok) {
         setError(data.message || "Registration failed");
         return;
@@ -68,7 +76,8 @@ export default function Signup() {
       toast({ title: "Account created!", description: "Welcome to 47DaPunjab." });
       queryClient.invalidateQueries({ queryKey: ["auth-user"] });
     } catch (err) {
-      setError("Something went wrong. Please try again.");
+      console.error("Registration error:", err);
+      setError("Unable to connect to the server. Please check your connection and try again.");
     } finally {
       setIsSubmitting(false);
     }

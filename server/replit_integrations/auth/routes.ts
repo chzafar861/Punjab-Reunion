@@ -13,7 +13,8 @@ export function registerAuthRoutes(app: Express): void {
       }
       const user = await authStorage.getUser(userId);
       if (user) {
-        res.json(user);
+        const { passwordHash, ...safeUser } = user as any;
+        res.json(safeUser);
       } else {
         res.json({
           id: userId,

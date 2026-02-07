@@ -48,7 +48,15 @@ export default function Login() {
         credentials: "include",
         body: JSON.stringify({ email, password }),
       });
-      const data = await response.json();
+
+      let data: any;
+      try {
+        data = await response.json();
+      } catch {
+        setError("Server returned an unexpected response. Please try again later.");
+        return;
+      }
+
       if (!response.ok) {
         setError(data.message || "Login failed");
         return;
@@ -56,7 +64,8 @@ export default function Login() {
       toast({ title: "Welcome back!", description: "You have signed in successfully." });
       queryClient.invalidateQueries({ queryKey: ["auth-user"] });
     } catch (err) {
-      setError("Something went wrong. Please try again.");
+      console.error("Login error:", err);
+      setError("Unable to connect to the server. Please check your connection and try again.");
     } finally {
       setIsSubmitting(false);
     }
