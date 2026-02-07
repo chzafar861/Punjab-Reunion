@@ -11,9 +11,19 @@ import { isAuthenticated, setupAuth, registerAuthRoutes } from "./replit_integra
 import { authStorage } from "./replit_integrations/auth/storage";
 import { sendVerificationEmail } from "./services/email";
 
-// Helper to get user ID from session (supports both OIDC and local auth)
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "47dapunjab@gmail.com").toLowerCase();
+
 const getUserId = (req: any): string | undefined => {
   return req.user?.claims?.sub || req.user?.id;
+};
+
+const getUserEmail = (req: any): string | undefined => {
+  const email = req.user?.claims?.email || req.user?.email;
+  return email?.toLowerCase();
+};
+
+const isAdminEmail = (email: string | undefined): boolean => {
+  return !!email && email.toLowerCase() === ADMIN_EMAIL;
 };
 
 // Middleware to require authentication and attach user info
@@ -83,12 +93,10 @@ export async function registerRoutes(
         console.error("[register] Verification email failed:", emailErr.message);
       }
 
-      // Auto-assign admin role to the very first user
-      const allUsers = await db.select().from(users);
-      const isFirstUser = allUsers.length === 1;
-      if (isFirstUser) {
+      const isAdmin = isAdminEmail(newUser.email || undefined);
+      if (isAdmin) {
         await storage.setUserRole(newUser.id, "admin", true, true);
-        console.log(`[register] First user detected — admin role assigned to: ${newUser.email}`);
+        console.log(`[register] Admin email detected — admin role assigned to: ${newUser.email}`);
       }
 
       req.login({ id: newUser.id, email: newUser.email, firstName: newUser.firstName, lastName: newUser.lastName, profileImageUrl: newUser.profileImageUrl }, (err: any) => {
@@ -97,7 +105,7 @@ export async function registerRoutes(
           return res.status(500).json({ message: "Account created but login failed" });
         }
         console.log(`[register] User registered: ${newUser.email} (${newUser.id})`);
-        res.json({ success: true, user: { id: newUser.id, email: newUser.email, firstName: newUser.firstName, lastName: newUser.lastName, isAdmin: isFirstUser } });
+        res.json({ success: true, user: { id: newUser.id, email: newUser.email, firstName: newUser.firstName, lastName: newUser.lastName } });
       });
     } catch (err: any) {
       if (err instanceof z.ZodError) {
@@ -304,15 +312,23 @@ export async function registerRoutes(
     });
   });
 
-  // Auth endpoint to get current user info (with role)
   app.get("/api/auth/me", requireUser, async (req: any, res) => {
     const userId = getUserId(req);
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
     }
+    const email = getUserEmail(req);
     const userRole = await storage.getUserRole(userId);
+    const emailIsAdmin = isAdminEmail(email);
+
+    if (emailIsAdmin && (!userRole || userRole.role !== "admin")) {
+      await storage.setUserRole(userId, "admin", true, true);
+      console.log(`[auth/me] Auto-assigned admin role to ${email}`);
+    }
+
     const claims = req.user?.claims || {};
     const localUser = req.user || {};
+    const role = emailIsAdmin ? "admin" : (userRole?.role || "member");
     res.json({
       id: userId,
       email: claims.email || localUser.email || null,
@@ -320,54 +336,13 @@ export async function registerRoutes(
       firstName: claims.first_name || localUser.firstName || null,
       lastName: claims.last_name || localUser.lastName || null,
       profileImageUrl: claims.profile_image_url || localUser.profileImageUrl || null,
-      role: userRole?.role || "member",
-      canSubmitProfiles: userRole?.canSubmitProfiles || false,
-      canManageProducts: userRole?.canManageProducts || false,
+      role,
+      canSubmitProfiles: emailIsAdmin || userRole?.canSubmitProfiles || false,
+      canManageProducts: emailIsAdmin || userRole?.canManageProducts || false,
     });
   });
   
-  // Check if any admins exist (for showing/hiding setup button)
-  app.get("/api/auth/has-admin", async (req, res) => {
-    try {
-      const allRoles = await storage.getAllUserRoles();
-      const existingAdmins = allRoles.filter(r => r.role === "admin");
-      res.json({ hasAdmin: existingAdmins.length > 0 });
-    } catch (error) {
-      res.json({ hasAdmin: true }); // Default to true to hide button on error
-    }
-  });
-
-  // One-time setup: Make the current logged-in user an admin
-  // This route is protected and only works if there are no admins yet OR if user is already admin
-  app.post("/api/auth/setup-admin", requireUser, async (req: any, res) => {
-    const userId = getUserId(req);
-    
-    try {
-      // Check if user is already admin or if there are no admins
-      const existingRole = await storage.getUserRole(userId);
-      const allRoles = await storage.getAllUserRoles();
-      const existingAdmins = allRoles.filter(r => r.role === "admin");
-      
-      // Allow if: no admins exist OR user is already admin
-      if (existingAdmins.length === 0 || existingRole?.role === "admin") {
-        const userRole = await storage.setUserRole(userId, "admin", true, true);
-        console.log(`[setup-admin] User ${userId} set as admin`);
-        res.json({ 
-          success: true, 
-          message: "You are now an admin",
-          role: userRole 
-        });
-      } else {
-        res.status(403).json({ 
-          success: false, 
-          message: "Admin already exists. Contact existing admin to grant permissions." 
-        });
-      }
-    } catch (error: any) {
-      console.error("[setup-admin] Error:", error);
-      res.status(500).json({ success: false, message: error.message });
-    }
-  });
+  
 
   // Check if username is available (for signup validation)
   // With Replit Auth, usernames are managed by Replit
@@ -427,6 +402,7 @@ export async function registerRoutes(
   app.post(api.profiles.create.path, requireUser, async (req: any, res) => {
     try {
       const userId = getUserId(req);
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
       
       // Check if user has permission to submit profiles
       const userRole = await storage.getUserRole(userId);
@@ -466,6 +442,7 @@ export async function registerRoutes(
   // Protected: Get current user's profiles (includes private fields since it's their own data)
   app.get("/api/my-profiles", requireUser, async (req: any, res) => {
     const userId = getUserId(req);
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
     console.log("[my-profiles] User ID from token:", userId);
     const userProfiles = await storage.getProfilesByUserId(userId);
     console.log("[my-profiles] Found profiles:", userProfiles.length);
@@ -477,6 +454,7 @@ export async function registerRoutes(
   app.put("/api/profiles/:id", requireUser, async (req: any, res) => {
     try {
       const userId = getUserId(req);
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
       const profileId = Number(req.params.id);
       const input = api.profiles.create.input.partial().parse(req.body);
       const updated = await storage.updateProfile(profileId, userId, input);
@@ -498,6 +476,7 @@ export async function registerRoutes(
   // Protected: Delete profile (only owner can delete) - also deletes photo from storage
   app.delete("/api/profiles/:id", requireUser, async (req: any, res) => {
     const userId = getUserId(req);
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
     const profileId = Number(req.params.id);
     
     // First get the profile to retrieve the photo URL for cleanup
@@ -508,34 +487,17 @@ export async function registerRoutes(
       return res.status(403).json({ message: "Not authorized to delete this profile" });
     }
     
-    // If profile had a photo, delete it from Supabase storage
-    if (profile?.photoUrl) {
+    if (profile?.photoUrl && profile.photoUrl.startsWith("/objects/")) {
       try {
-        const { supabaseAdmin } = await import("./lib/supabase");
-        // Extract file path from the photo URL
-        const bucket = "profile-photos";
-        let filePath: string | null = null;
-        
-        try {
-          const url = new URL(profile.photoUrl);
-          const regex = new RegExp(`/${bucket}/(.+)$`);
-          const match = url.pathname.match(regex);
-          if (match) filePath = match[1];
-          if (!filePath) {
-            const storageMatch = profile.photoUrl.match(new RegExp(`${bucket}/([^?]+)`));
-            filePath = storageMatch ? storageMatch[1] : null;
-          }
-        } catch {
-          const match = profile.photoUrl.match(new RegExp(`${bucket}/([^?]+)`));
-          filePath = match ? match[1] : null;
-        }
-        
-        if (filePath) {
-          await supabaseAdmin.storage.from(bucket).remove([filePath]);
-          console.log(`Deleted photo ${filePath} for profile ${profileId}`);
+        const { objectStorageClient } = await import("./replit_integrations/object_storage/objectStorage");
+        const bucketId = process.env.DEFAULT_OBJECT_STORAGE_BUCKET_ID;
+        if (bucketId) {
+          const objectPath = profile.photoUrl.replace("/objects/", "");
+          const bucket = objectStorageClient.bucket(bucketId);
+          await bucket.file(objectPath).delete({ ignoreNotFound: true });
+          console.log(`Deleted photo ${objectPath} for profile ${profileId}`);
         }
       } catch (err) {
-        // Log but don't fail the request - profile is already deleted
         console.error(`Failed to delete photo for profile ${profileId}:`, err);
       }
     }
@@ -616,6 +578,7 @@ export async function registerRoutes(
   app.put("/api/comments/:id", requireUser, async (req: any, res) => {
     try {
       const userId = getUserId(req);
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
       const commentId = Number(req.params.id);
       const { content } = req.body;
       
@@ -636,6 +599,7 @@ export async function registerRoutes(
   // Protected: Delete comment (only owner can delete)
   app.delete("/api/comments/:id", requireUser, async (req: any, res) => {
     const userId = getUserId(req);
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
     const commentId = Number(req.params.id);
     const deleted = await storage.deleteProfileComment(commentId, userId);
     if (!deleted) {
@@ -788,6 +752,7 @@ export async function registerRoutes(
   app.post("/api/admin/products", requireUser, requireAdmin, async (req: any, res) => {
     try {
       const userId = getUserId(req);
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
       const { title, description, price, currency, category, imageUrl, status, inventoryCount } = req.body;
       
       if (!title || !description || price === undefined) {
@@ -815,6 +780,7 @@ export async function registerRoutes(
   app.put("/api/admin/products/:id", requireUser, requireAdmin, async (req: any, res) => {
     try {
       const userId = getUserId(req);
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
       const productId = Number(req.params.id);
       const updateData = req.body;
       
@@ -835,6 +801,7 @@ export async function registerRoutes(
   // Admin: Delete product
   app.delete("/api/admin/products/:id", requireUser, requireAdmin, async (req: any, res) => {
     const userId = getUserId(req);
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
     const productId = Number(req.params.id);
     const deleted = await storage.deleteProduct(productId, userId);
     if (!deleted) {
@@ -848,6 +815,7 @@ export async function registerRoutes(
   // Protected: Get user's orders
   app.get("/api/my-orders", requireUser, async (req: any, res) => {
     const userId = getUserId(req);
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
     const orders = await storage.getOrders(userId);
     res.json(orders);
   });
@@ -855,6 +823,7 @@ export async function registerRoutes(
   // Protected: Get single order (user can only see their own)
   app.get("/api/orders/:id", requireUser, async (req: any, res) => {
     const userId = getUserId(req);
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
     const order = await storage.getOrder(Number(req.params.id));
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
@@ -874,6 +843,7 @@ export async function registerRoutes(
   app.post("/api/orders", requireUser, async (req: any, res) => {
     try {
       const userId = getUserId(req);
+      if (!userId) return res.status(401).json({ message: "Unauthorized" });
       const { 
         customerName, customerEmail, customerPhone, customerPhone2,
         country, province, city, streetAddress, notes, items 

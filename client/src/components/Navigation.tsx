@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Menu, X, Globe, User, LogOut, FileText, PlusCircle, ShoppingBag, Settings, Package, ClipboardList, Users, Shield } from "lucide-react";
+import { Menu, X, Globe, User, LogOut, FileText, PlusCircle, Package, ClipboardList, Users } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -14,45 +14,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LanguageSelector } from "@/components/LanguageSelector";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { useToast } from "@/hooks/use-toast";
-import { apiRequest, queryClient } from "@/lib/queryClient";
-import { useQuery } from "@tanstack/react-query";
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
   const [location, setLocation] = useLocation();
-  const { user, isAuthenticated, isLoading, authReady, logout, isLoggingOut } = useAuth();
+  const { user, isAuthenticated, isLoading, logout, isLoggingOut } = useAuth();
   const { t } = useLanguage();
-  const { toast } = useToast();
-  const [settingUpAdmin, setSettingUpAdmin] = useState(false);
-  
-  // Check if any admin exists - only show "Become Admin" if NO admins exist
-  // Wait for auth to be ready before checking to ensure consistent behavior
-  const { data: hasAdminData, isFetched: adminCheckDone } = useQuery<{ hasAdmin: boolean }>({
-    queryKey: ["/api/auth/has-admin"],
-    staleTime: 60000, // Cache for 1 minute
-    enabled: authReady, // Only check after auth is ready
-  });
-  const systemHasAdmin = !adminCheckDone || (hasAdminData?.hasAdmin ?? true); // Default to true to hide button until checked
-  
-  const handleBecomeAdmin = async () => {
-    setSettingUpAdmin(true);
-    try {
-      const response = await apiRequest("POST", "/api/auth/setup-admin");
-      const data = await response.json();
-      if (data.success) {
-        toast({ title: "Success", description: "You are now an admin! Refreshing..." });
-        queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
-        setTimeout(() => window.location.reload(), 1000);
-      } else {
-        toast({ title: "Error", description: data.message, variant: "destructive" });
-      }
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message || "Failed to set up admin", variant: "destructive" });
-    } finally {
-      setSettingUpAdmin(false);
-    }
-  };
 
   const navLinks = [
     { href: "/", label: t("nav.home") },
@@ -123,21 +90,6 @@ export function Navigation() {
                         {t("nav.myProfiles")}
                       </Link>
                     </DropdownMenuItem>
-                    {/* Only show "Become Admin" if NO admins exist in the system (first-time setup) */}
-                    {!isAdmin && !systemHasAdmin && (
-                      <DropdownMenuItem asChild>
-                        <button
-                          type="button"
-                          onClick={handleBecomeAdmin}
-                          disabled={settingUpAdmin}
-                          className="cursor-pointer w-full text-left"
-                          data-testid="button-become-admin"
-                        >
-                          <Shield className="mr-2 h-4 w-4" />
-                          {settingUpAdmin ? "Setting up..." : "Become Admin"}
-                        </button>
-                      </DropdownMenuItem>
-                    )}
                     {isAdmin && (
                       <>
                         <DropdownMenuSeparator />

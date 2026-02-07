@@ -47,3 +47,4 @@ integrations = ["javascript_object_storage:2.0.0", "javascript_log_in_with_repli
 VITE_SUPABASE_URL = "https://ckhmliamtdoywgcjipjw.supabase.co"
 SUPABASE_URL = "https://ckhmliamtdoywgcjipjw.supabase.co"
 APP_URL = "https://www.47dapunjab.com"
+ADMIN_EMAIL = "47dapunjab@gmail.com"

@@ -9,7 +9,7 @@ import connectPg from "connect-pg-simple";
 import { authStorage } from "./storage";
 import { storage } from "../../storage";
 
-const ADMIN_EMAILS = ["chzafar861@gmail.com"];
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || "47dapunjab@gmail.com").toLowerCase();
 
 const getOidcConfig = memoize(
   async () => {
@@ -71,7 +71,7 @@ async function upsertUser(claims: any) {
 
   const email = claims["email"]?.toLowerCase();
   const userId = claims["sub"];
-  if (email && ADMIN_EMAILS.includes(email)) {
+  if (email && email === ADMIN_EMAIL) {
     try {
       const existingRole = await storage.getUserRole(userId);
       if (!existingRole || existingRole.role !== "admin") {
