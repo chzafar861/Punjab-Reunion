@@ -162,15 +162,18 @@ export function Navigation() {
                       </>
                     )}
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <a
-                        href="/api/logout"
-                        className="cursor-pointer w-full text-left flex items-center"
-                        data-testid="button-logout"
-                      >
-                        <LogOut className="mr-2 h-4 w-4" />
-                        {t("nav.logout")}
-                      </a>
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.preventDefault();
+                        logout();
+                        setLocation("/");
+                      }}
+                      disabled={isLoggingOut}
+                      className="cursor-pointer"
+                      data-testid="button-logout"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      {isLoggingOut ? "Signing out..." : t("nav.logout")}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -292,14 +295,20 @@ export function Navigation() {
               )}
               <div className="pt-2 border-t border-border flex items-center justify-between">
                 {isAuthenticated ? (
-                  <a
-                    href="/api/logout"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsOpen(false);
+                      logout();
+                      setLocation("/");
+                    }}
+                    disabled={isLoggingOut}
                     className="text-lg font-medium py-2 text-secondary flex items-center gap-2 text-left"
                     data-testid="button-mobile-logout"
                   >
                     <LogOut className="h-5 w-5" />
-                    {t("nav.logout")}
-                  </a>
+                    {isLoggingOut ? "Signing out..." : t("nav.logout")}
+                  </button>
                 ) : (
                   <div className="flex gap-4">
                     <Link 

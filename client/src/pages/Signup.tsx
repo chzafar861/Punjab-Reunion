@@ -35,7 +35,7 @@ export default function Signup() {
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      setLocation("/");
+      setLocation("/", { replace: true });
     }
   }, [isAuthenticated, isLoading, setLocation]);
 
@@ -66,8 +66,7 @@ export default function Signup() {
         return;
       }
       toast({ title: "Account created!", description: "Welcome to 47DaPunjab." });
-      await queryClient.invalidateQueries({ queryKey: ["auth-user"] });
-      setLocation("/");
+      queryClient.invalidateQueries({ queryKey: ["auth-user"] });
     } catch (err) {
       setError("Something went wrong. Please try again.");
     } finally {

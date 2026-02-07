@@ -32,7 +32,7 @@ export default function Login() {
 
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      setLocation("/");
+      setLocation("/", { replace: true });
     }
   }, [isAuthenticated, isLoading, setLocation]);
 
@@ -54,8 +54,7 @@ export default function Login() {
         return;
       }
       toast({ title: "Welcome back!", description: "You have signed in successfully." });
-      await queryClient.invalidateQueries({ queryKey: ["auth-user"] });
-      setLocation("/");
+      queryClient.invalidateQueries({ queryKey: ["auth-user"] });
     } catch (err) {
       setError("Something went wrong. Please try again.");
     } finally {

@@ -69,13 +69,6 @@ async function fetchUser(): Promise<AuthUser | null> {
   }
 }
 
-async function logout(): Promise<void> {
-  try {
-    await fetch("/api/auth/local-logout", { method: "POST", credentials: "include" });
-  } catch {}
-  window.location.href = "/";
-}
-
 export function useAuth() {
   const queryClient = useQueryClient();
   
@@ -87,9 +80,14 @@ export function useAuth() {
   });
 
   const logoutMutation = useMutation({
-    mutationFn: logout,
+    mutationFn: async () => {
+      try {
+        await fetch("/api/auth/local-logout", { method: "POST", credentials: "include" });
+      } catch {}
+    },
     onSuccess: () => {
       queryClient.setQueryData(["auth-user"], null);
+      queryClient.clear();
     },
   });
 
