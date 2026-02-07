@@ -83,13 +83,21 @@ export async function registerRoutes(
         console.error("[register] Verification email failed:", emailErr.message);
       }
 
+      // Auto-assign admin role to the very first user
+      const allUsers = await db.select().from(users);
+      const isFirstUser = allUsers.length === 1;
+      if (isFirstUser) {
+        await storage.setUserRole(newUser.id, "admin", true, true);
+        console.log(`[register] First user detected — admin role assigned to: ${newUser.email}`);
+      }
+
       req.login({ id: newUser.id, email: newUser.email, firstName: newUser.firstName, lastName: newUser.lastName, profileImageUrl: newUser.profileImageUrl }, (err: any) => {
         if (err) {
           console.error("[register] Session login error:", err);
           return res.status(500).json({ message: "Account created but login failed" });
         }
         console.log(`[register] User registered: ${newUser.email} (${newUser.id})`);
-        res.json({ success: true, user: { id: newUser.id, email: newUser.email, firstName: newUser.firstName, lastName: newUser.lastName } });
+        res.json({ success: true, user: { id: newUser.id, email: newUser.email, firstName: newUser.firstName, lastName: newUser.lastName, isAdmin: isFirstUser } });
       });
     } catch (err: any) {
       if (err instanceof z.ZodError) {
@@ -331,7 +339,7 @@ export async function registerRoutes(
 
   // One-time setup: Make the current logged-in user an admin
   // This route is protected and only works if there are no admins yet OR if user is already admin
-  app.post("/api/auth/setup-admin", isAuthenticated, async (req: any, res) => {
+  app.post("/api/auth/setup-admin", requireUser, async (req: any, res) => {
     const userId = getUserId(req);
     
     try {
@@ -416,7 +424,7 @@ export async function registerRoutes(
   });
 
   // Protected: Create profile (requires login and submission permission)
-  app.post(api.profiles.create.path, isAuthenticated, async (req: any, res) => {
+  app.post(api.profiles.create.path, requireUser, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       
@@ -456,7 +464,7 @@ export async function registerRoutes(
   });
 
   // Protected: Get current user's profiles (includes private fields since it's their own data)
-  app.get("/api/my-profiles", isAuthenticated, async (req: any, res) => {
+  app.get("/api/my-profiles", requireUser, async (req: any, res) => {
     const userId = getUserId(req);
     console.log("[my-profiles] User ID from token:", userId);
     const userProfiles = await storage.getProfilesByUserId(userId);
@@ -466,7 +474,7 @@ export async function registerRoutes(
   });
 
   // Protected: Update profile (only owner can update)
-  app.put("/api/profiles/:id", isAuthenticated, async (req: any, res) => {
+  app.put("/api/profiles/:id", requireUser, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const profileId = Number(req.params.id);
@@ -488,7 +496,7 @@ export async function registerRoutes(
   });
 
   // Protected: Delete profile (only owner can delete) - also deletes photo from storage
-  app.delete("/api/profiles/:id", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/profiles/:id", requireUser, async (req: any, res) => {
     const userId = getUserId(req);
     const profileId = Number(req.params.id);
     
@@ -605,7 +613,7 @@ export async function registerRoutes(
   });
 
   // Protected: Update comment (only owner can update)
-  app.put("/api/comments/:id", isAuthenticated, async (req: any, res) => {
+  app.put("/api/comments/:id", requireUser, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const commentId = Number(req.params.id);
@@ -626,7 +634,7 @@ export async function registerRoutes(
   });
 
   // Protected: Delete comment (only owner can delete)
-  app.delete("/api/comments/:id", isAuthenticated, async (req: any, res) => {
+  app.delete("/api/comments/:id", requireUser, async (req: any, res) => {
     const userId = getUserId(req);
     const commentId = Number(req.params.id);
     const deleted = await storage.deleteProfileComment(commentId, userId);
@@ -653,13 +661,13 @@ export async function registerRoutes(
   };
 
   // Admin: Get all user roles
-  app.get("/api/admin/users", isAuthenticated, requireAdmin, async (req: any, res) => {
+  app.get("/api/admin/users", requireUser, requireAdmin, async (req: any, res) => {
     const roles = await storage.getAllUserRoles();
     res.json(roles);
   });
 
   // Admin: Set user role
-  app.post("/api/admin/users/:userId/role", isAuthenticated, requireAdmin, async (req: any, res) => {
+  app.post("/api/admin/users/:userId/role", requireUser, requireAdmin, async (req: any, res) => {
     const { userId } = req.params;
     const { role, canSubmitProfiles, canManageProducts } = req.body;
     
@@ -679,7 +687,7 @@ export async function registerRoutes(
   // ========== SUBSCRIPTION REQUESTS ==========
   
   // Protected: Create subscription request
-  app.post("/api/subscription-requests", isAuthenticated, async (req: any, res) => {
+  app.post("/api/subscription-requests", requireUser, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const { fullName, email, phone, country, city, reason, plan } = req.body;
@@ -710,13 +718,13 @@ export async function registerRoutes(
   });
 
   // Admin: Get all subscription requests
-  app.get("/api/admin/subscription-requests", isAuthenticated, requireAdmin, async (req: any, res) => {
+  app.get("/api/admin/subscription-requests", requireUser, requireAdmin, async (req: any, res) => {
     const requests = await storage.getSubscriptionRequests();
     res.json(requests);
   });
 
   // Admin: Update subscription request status and grant permission
-  app.put("/api/admin/subscription-requests/:id", isAuthenticated, requireAdmin, async (req: any, res) => {
+  app.put("/api/admin/subscription-requests/:id", requireUser, requireAdmin, async (req: any, res) => {
     try {
       const requestId = Number(req.params.id);
       const { status } = req.body;
@@ -767,7 +775,7 @@ export async function registerRoutes(
   });
 
   // Admin: Get all products (including drafts)
-  app.get("/api/admin/products", isAuthenticated, requireAdmin, async (req: any, res) => {
+  app.get("/api/admin/products", requireUser, requireAdmin, async (req: any, res) => {
     const { status, category } = req.query;
     const products = await storage.getProducts(
       status as string,
@@ -777,7 +785,7 @@ export async function registerRoutes(
   });
 
   // Admin: Create product
-  app.post("/api/admin/products", isAuthenticated, requireAdmin, async (req: any, res) => {
+  app.post("/api/admin/products", requireUser, requireAdmin, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const { title, description, price, currency, category, imageUrl, status, inventoryCount } = req.body;
@@ -804,7 +812,7 @@ export async function registerRoutes(
   });
 
   // Admin: Update product
-  app.put("/api/admin/products/:id", isAuthenticated, requireAdmin, async (req: any, res) => {
+  app.put("/api/admin/products/:id", requireUser, requireAdmin, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const productId = Number(req.params.id);
@@ -825,7 +833,7 @@ export async function registerRoutes(
   });
 
   // Admin: Delete product
-  app.delete("/api/admin/products/:id", isAuthenticated, requireAdmin, async (req: any, res) => {
+  app.delete("/api/admin/products/:id", requireUser, requireAdmin, async (req: any, res) => {
     const userId = getUserId(req);
     const productId = Number(req.params.id);
     const deleted = await storage.deleteProduct(productId, userId);
@@ -838,14 +846,14 @@ export async function registerRoutes(
   // ========== ORDER ROUTES ==========
 
   // Protected: Get user's orders
-  app.get("/api/my-orders", isAuthenticated, async (req: any, res) => {
+  app.get("/api/my-orders", requireUser, async (req: any, res) => {
     const userId = getUserId(req);
     const orders = await storage.getOrders(userId);
     res.json(orders);
   });
 
   // Protected: Get single order (user can only see their own)
-  app.get("/api/orders/:id", isAuthenticated, async (req: any, res) => {
+  app.get("/api/orders/:id", requireUser, async (req: any, res) => {
     const userId = getUserId(req);
     const order = await storage.getOrder(Number(req.params.id));
     if (!order) {
@@ -863,7 +871,7 @@ export async function registerRoutes(
   });
 
   // Protected: Create order
-  app.post("/api/orders", isAuthenticated, async (req: any, res) => {
+  app.post("/api/orders", requireUser, async (req: any, res) => {
     try {
       const userId = getUserId(req);
       const { 
@@ -927,13 +935,13 @@ export async function registerRoutes(
   });
 
   // Admin: Get all orders
-  app.get("/api/admin/orders", isAuthenticated, requireAdmin, async (req: any, res) => {
+  app.get("/api/admin/orders", requireUser, requireAdmin, async (req: any, res) => {
     const orders = await storage.getOrders();
     res.json(orders);
   });
 
   // Admin: Update order status
-  app.put("/api/admin/orders/:id/status", isAuthenticated, requireAdmin, async (req: any, res) => {
+  app.put("/api/admin/orders/:id/status", requireUser, requireAdmin, async (req: any, res) => {
     const orderId = Number(req.params.id);
     const { status } = req.body;
     

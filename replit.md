@@ -188,10 +188,16 @@ To deploy:
 
 ## Recent Changes
 
+### February 2026 - Admin Panel & Auth Middleware Fix
+- Auto-admin assignment: the very first user to sign up automatically gets admin role with full permissions
+- Fixed auth middleware: replaced OIDC-only `isAuthenticated` with `requireUser` on all protected routes (works with local email/password auth)
+- Fixed React hooks ordering in AdminProducts.tsx and AdminUsers.tsx (moved hooks before conditional returns)
+- Cleaned up dead Supabase client code
+- Database cleaned of all test users — ready for fresh first admin signup
+
 ### January 2026 - Migration from Supabase to Replit Infrastructure
 - Replaced Supabase Auth with Replit Auth (OIDC-based)
 - Replaced Supabase PostgreSQL REST API with direct PostgreSQL via Drizzle ORM
 - Replaced Supabase Storage with Replit Object Storage
 - Simplified authentication flow using express-session
 - All client hooks now use REST API endpoints instead of direct Supabase calls
-- Admin user ID: `f2074a29-d162-4b8c-89e8-1ebb6974addd`

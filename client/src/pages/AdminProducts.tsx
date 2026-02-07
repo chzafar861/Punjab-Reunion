@@ -79,40 +79,6 @@ export default function AdminProducts() {
   
   const isAdmin = user?.role === "admin";
 
-  useEffect(() => {
-    if (!authLoading && !isAdmin) {
-      toast({
-        title: "Access Denied",
-        description: "You need administrator privileges to access this page.",
-        variant: "destructive",
-      });
-      setLocation("/");
-    }
-  }, [authLoading, isAdmin, toast, setLocation]);
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="max-w-md">
-          <CardHeader>
-            <CardTitle>Access Denied</CardTitle>
-            <CardDescription>
-              You need administrator privileges to access this page.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    );
-  }
-
   const { data: products, isLoading, error } = useQuery<Product[]>({
     queryKey: ["/api/admin/products"],
     queryFn: async () => {
@@ -120,6 +86,7 @@ export default function AdminProducts() {
       if (!response.ok) throw new Error("Failed to fetch products");
       return response.json();
     },
+    enabled: isAdmin,
   });
 
   const createProduct = useMutation({
@@ -210,6 +177,40 @@ export default function AdminProducts() {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     },
   });
+
+  useEffect(() => {
+    if (!authLoading && !isAdmin) {
+      toast({
+        title: "Access Denied",
+        description: "You need administrator privileges to access this page.",
+        variant: "destructive",
+      });
+      setLocation("/");
+    }
+  }, [authLoading, isAdmin, toast, setLocation]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle>Access Denied</CardTitle>
+            <CardDescription>
+              You need administrator privileges to access this page.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
   const openCreateDialog = () => {
     setEditingProduct(null);

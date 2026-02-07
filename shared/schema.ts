@@ -15,7 +15,7 @@ export type UserRole = typeof userRoleEnum[number];
 // User roles table for permission management
 export const userRoles = pgTable("user_roles", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id").notNull().unique(), // Links to Supabase auth user
+  userId: varchar("user_id").notNull().unique(),
   role: varchar("role").notNull().default("member"), // admin, contributor, member
   canSubmitProfiles: boolean("can_submit_profiles").default(false),
   canManageProducts: boolean("can_manage_products").default(false),

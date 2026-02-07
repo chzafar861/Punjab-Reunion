@@ -59,40 +59,6 @@ export default function AdminUsers() {
   
   const isAdmin = user?.role === "admin";
 
-  useEffect(() => {
-    if (!authLoading && !isAdmin) {
-      toast({
-        title: "Access Denied",
-        description: "You need administrator privileges to access this page.",
-        variant: "destructive",
-      });
-      setLocation("/");
-    }
-  }, [authLoading, isAdmin, toast, setLocation]);
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!isAdmin) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Card className="max-w-md">
-          <CardHeader>
-            <CardTitle>Access Denied</CardTitle>
-            <CardDescription>
-              You need administrator privileges to access this page.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    );
-  }
-
   const { data: users, isLoading, error } = useQuery<UserRoleRecord[]>({
     queryKey: ["user-roles"],
     queryFn: async () => {
@@ -100,6 +66,7 @@ export default function AdminUsers() {
       if (!response.ok) throw new Error("Failed to fetch user roles");
       return response.json();
     },
+    enabled: isAdmin,
   });
 
   const updateRole = useMutation({
@@ -140,6 +107,40 @@ export default function AdminUsers() {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     },
   });
+
+  useEffect(() => {
+    if (!authLoading && !isAdmin) {
+      toast({
+        title: "Access Denied",
+        description: "You need administrator privileges to access this page.",
+        variant: "destructive",
+      });
+      setLocation("/");
+    }
+  }, [authLoading, isAdmin, toast, setLocation]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle>Access Denied</CardTitle>
+            <CardDescription>
+              You need administrator privileges to access this page.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </div>
+    );
+  }
 
   const handleAddUser = (e: React.FormEvent) => {
     e.preventDefault();
